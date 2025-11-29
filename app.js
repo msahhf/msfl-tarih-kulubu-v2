@@ -8,9 +8,10 @@ import { fileURLToPath } from "url";
 import exphbs from "express-handlebars";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
-import "dotenv/config";
+import dotenv from "dotenv";
 import helmet from "helmet";
 
+// Middlewares
 import { csrfProtection, addCsrfToken } from "./middlewares/csrf.js";
 
 // Helpers
@@ -31,6 +32,9 @@ import publicProfileRoute from "./routes/publicProfile.js";
 import sifreUnuttumRoute from "./routes/sifreUnuttum.js";
 import adminRoute from "./routes/admin.js";
 import uploadRoutes from "./routes/upload.js";
+import profileMediaRouter from "./routes/profileMedia.js";
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,85 +43,38 @@ const app = express();
 app.set("trust proxy", 1);
 
 // ========================================================
-// 1) SUNUCU HAZIR MI? (DB BAĞLANANA KADAR LOADING)
+// DB HAZIRLIK
 // ========================================================
 let serverReady = false;
 
-function loadingScreen(req, res) {
-  return res.send(`<!DOCTYPE html>
-  <html lang="tr">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Sunucu hazırlanıyor...</title>
-    <style>
-      * { box-sizing:border-box; margin:0; padding:0; }
-      body {
-        background:#111;
-        color:#fff;
-        height:100vh;
-        display:flex;
-        flex-direction:column;
-        justify-content:center;
-        align-items:center;
-        font-family:Arial, sans-serif;
-        text-align:center;
-      }
-      .loader {
-        width:60px;
-        height:60px;
-        border:7px solid #444;
-        border-top-color:#e52b2b;
-        border-radius:50%;
-        animation:spin 0.75s linear infinite;
-        margin-bottom:18px;
-      }
-      h2 { font-size:22px; margin-bottom:6px; }
-      p  { font-size:14px; color:#ccc; }
-      @keyframes spin { to { transform:rotate(360deg); } }
-    </style>
-  </head>
-  <body>
-    <div class="loader"></div>
-    <h2>Sunucu hazırlanıyor...</h2>
-    <p>Lütfen bekleyiniz.</p>
-  </body>
-  </html>`);
-}
-
-// ========================================================
-// 2) MONGODB BAĞLANTISI (TOP-LEVEL AWAIT)
-// ========================================================
 async function connectDB() {
   try {
     await mongoose.connect(process.env.MONGO_URL, {
       dbName: "tarihKulubu",
       serverSelectionTimeoutMS: 8000,
     });
-
     logger.info("✔ MongoDB bağlantısı başarılı");
     serverReady = true;
   } catch (err) {
-    logger.error("❌ MongoDB bağlantı hatası:", err);
-    // Bağlantı yoksa serverReady = false kalır ve loading ekranı döner
+    logger.error("❌ MongoDB bağlantı hatası", err);
   }
 }
 
 await connectDB();
 
 // ========================================================
-// 3) DB HAZIR DEĞİLSE TÜM İSTEKLERDE LOADING DÖN
-//    (routes / middleware'lerden ÖNCE OLMALI)
+// DB BEKLENMEDEN REQUEST GELİRSE
 // ========================================================
 app.use((req, res, next) => {
-  if (!serverReady) return loadingScreen(req, res);
+  if (!serverReady) {
+    return res.send("Sunucu hazırlanıyor, lütfen bekleyin...");
+  }
   next();
 });
 
 // ========================================================
-// 4) EXPRESS ALTYAPISI
-// ========================================================
-
 // GÜVENLİK
+// ========================================================
 app.use(
   helmet({
     contentSecurityPolicy: false,
@@ -126,15 +83,19 @@ app.use(
   })
 );
 
+// ========================================================
 // BODY & COOKIE
-app.use(express.urlencoded({ limit: "20mb", extended: true }));
+// ========================================================
 app.use(express.json({ limit: "20mb" }));
-
+app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 app.use(cookieParser());
+
 app.locals.isProd = process.env.NODE_ENV === "production";
 
-// JWT AUTH
-const JWT_SECRET = process.env.JWT_SECRET || "***REMOVED***";
+// ========================================================
+// JWT AUTH MIDDLEWARE (GLOBAL)
+// ========================================================
+const JWT_SECRET = process.env.JWT_SECRET || ***REMOVED***;
 
 app.use((req, res, next) => {
   const token = req.cookies?.auth_token;
@@ -147,13 +108,7 @@ app.use((req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-
-    req.user = {
-      id: decoded.id,
-      username: decoded.username,
-      role: decoded.role,
-    };
-
+    req.user = decoded;
     res.locals.isAuth = true;
     res.locals.currentUser = decoded.username;
     res.locals.currentUserRole = decoded.role;
@@ -162,20 +117,28 @@ app.use((req, res, next) => {
     req.user = null;
     res.locals.isAuth = false;
   }
-
   next();
 });
 
+// ========================================================
+// 🔥 CSRF DIŞI API (ÖNCE)
+// ========================================================
 app.use("/api/upload", uploadRoutes);
+app.use("/api/profile-media", profileMediaRouter);
+  app.use("/admin", adminRoute);
 
+// ========================================================
 // STATIC
+// ========================================================
 app.use("/public", express.static(path.join(__dirname, "public")));
-app.use("/img", express.static(path.join(__dirname, "public/img")));
 app.use("/css", express.static(path.join(__dirname, "public/css")));
 app.use("/js", express.static(path.join(__dirname, "public/js")));
+app.use("/img", express.static(path.join(__dirname, "public/img")));
 app.use("/fonts", express.static(path.join(__dirname, "public/fonts")));
 
+// ========================================================
 // HANDLEBARS
+// ========================================================
 app.engine(
   "handlebars",
   exphbs.create({
@@ -195,40 +158,46 @@ app.engine(
 app.set("view engine", "handlebars");
 app.set("views", path.join(__dirname, "views"));
 
-// CSRF
+// ========================================================
+// ✅ CSRF (API DIŞINDA HER YERDE)
+// ========================================================
 app.use(csrfProtection);
 app.use(addCsrfToken);
 
-// ROUTES
-//app.use("/", mainRoute);
-//app.use("/blog", blogsRoute);
-//app.use("/kullanici", kullaniciRoute);
-//app.use("/legal", legalRoute);
-//app.use("/hesap", hesapRoute);
-//app.use("/profile", profileRoute);
-//app.use("/sifre-unuttum", sifreUnuttumRoute);
-//app.use("/admin", adminRoute);
-//app.use("/u", publicProfileRoute);
+// ========================================================
+// MAINTENANCE
+// ========================================================
+if (process.env.MAINTENANCE_MODE === "true") {
+  app.use((req, res) => {
+    return res.status(503).render("pages/bakim", { layout: false });
+  });
+} else {
+  app.use("/", mainRoute);
+  app.use("/blog", blogsRoute);
+  app.use("/kullanici", kullaniciRoute);
+  app.use("/legal", legalRoute);
+  app.use("/hesap", hesapRoute);
+  app.use("/profile", profileRoute);
+  app.use("/sifre-unuttum", sifreUnuttumRoute);
+  app.use("/u", publicProfileRoute);
+}
 
 // ========================================================
-// BAKIM MODU – TÜM İSTEKLERİ YAKALA (DOĞRU YÖNTEM)
-// ========================================================
-app.use((req, res) => {
-  res.status(503).render("pages/bakim", { layout: false });
-})
-
 // 404
+// ========================================================
 app.use((req, res) => {
   res.status(404).render("pages/404");
 });
 
-// LOCAL GELİŞTİRME İÇİN (Vercel dışı)
+// ========================================================
+// SERVER
+// ========================================================
 const PORT = process.env.PORT || 3000;
+
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`🚀 Sunucu çalışıyor: http://localhost:${PORT}`);
   });
 }
 
-// EXPORT (Vercel)
 export default app;
