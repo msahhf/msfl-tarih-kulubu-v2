@@ -5,3 +5,5 @@ logs/
 *.zip
 .vercel
 dump
+.next
+tsconfig.tsbuildinfo
