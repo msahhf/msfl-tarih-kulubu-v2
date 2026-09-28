@@ -10,7 +10,7 @@ The current production codebase is an Express + Handlebars + MongoDB monolith. T
 
 ## Git
 
-- All rewrite work belongs on the `developing` branch.
+- All rewrite work belongs on the `rewrite/nextjs` branch.
 - Never modify or reset `main`.
 - Do not delete the legacy code from `main`.
 - Make focused commits as the rewrite progresses.
