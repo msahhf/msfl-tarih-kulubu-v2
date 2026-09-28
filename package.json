@@ -18,7 +18,7 @@
     "mongodb": "^6.15.0"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.0.0",
+    "@tailwindcss/postcss": "^4.0.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.2",
     "@types/node": "^22.10.2",

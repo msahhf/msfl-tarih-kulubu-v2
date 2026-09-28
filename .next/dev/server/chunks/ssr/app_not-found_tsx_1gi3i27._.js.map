@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///home/sah/Belgeler/githubd%C3%BCzenlemelerim/msfl-tarih-kulubu-v2/app/not-found.tsx"],"sourcesContent":["export default function NotFound() {\n  return (\n    <div className=\"min-h-screen flex flex-col items-center justify-center px-4\">\n      <div className=\"max-w-md mx-auto text-center space-y-6\">\n        <h1 className=\"text-6xl font-display font-bold text-muted-foreground\">\n          404\n        </h1>\n        <h2 className=\"text-2xl font-heading font-semibold\">\n          Sayfa bulunamadı\n        </h2>\n        <p className=\"text-muted-foreground\">\n          Aradığınız sayfa mevcut değil veya taşınmış olabilir.\n        </p>\n        <a\n          href=\"/\"\n          className=\"inline-block px-6 py-3 bg-accent text-accent-foreground rounded-lg font-medium hover:opacity-90 transition-opacity\"\n        >\n          Ana Sayfaya Dön\n        </a>\n      </div>\n    </div>\n  );\n}\n"],"names":["NotFound","className","href"],"mappings":";;;;;;AAAe,SAASA;IACtB,qBACE,8OAAC;QAAIC,WAAU;kBACb,cAAA,8OAAC;YAAIA,WAAU;;8BACb,8OAAC;oBAAGA,WAAU;8BAAwD;;;;;;8BAGtE,8OAAC;oBAAGA,WAAU;8BAAsC;;;;;;8BAGpD,8OAAC;oBAAEA,WAAU;8BAAwB;;;;;;8BAGrC,8OAAC;oBACCC,MAAK;oBACLD,WAAU;8BACX;;;;;;;;;;;;;;;;;AAMT"}}]
+}
