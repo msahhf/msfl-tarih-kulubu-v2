@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function NotFound() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
@@ -11,12 +13,12 @@ export default function NotFound() {
         <p className="text-muted-foreground">
           Aradığınız sayfa mevcut değil veya taşınmış olabilir.
         </p>
-        <a
+        <Link
           href="/"
           className="inline-block px-6 py-3 bg-accent text-accent-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
         >
           Ana Sayfaya Dön
-        </a>
+        </Link>
       </div>
     </div>
   );

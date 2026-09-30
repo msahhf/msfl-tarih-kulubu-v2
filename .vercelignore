@@ -1,0 +1,3 @@
+# Keep local secret files out of Vercel deployments (vercel CLI does not read .gitignore)
+.env*
+!.env.example

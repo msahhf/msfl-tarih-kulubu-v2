@@ -1,0 +1,195 @@
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MSFL Tarih Kulübü</title>
+  
+    <!-- Global Stil Dosyaları -->
+    <link rel="stylesheet" href="/css/main.css" />
+    <link rel="stylesheet" href="/css/navbar.css" />
+    <link rel="stylesheet" href="/css/social-media.css" />
+    <link rel="stylesheet" href="/css/footer.css" />
+    <link rel="stylesheet" href="/css/db-loading.css" />
+    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/yardim-destek.css" />
+  
+    <!-- Sayfa Bazlı Stil Dosyaları -->
+    <link rel="stylesheet" href="/css/anasayfa.css" />
+    <link rel="stylesheet" href="/css/hakkinda.css" />
+    <link rel="stylesheet" href="/css/blog.css" />
+    <link rel="stylesheet" href="/css/blogDetay.css" />
+    <link rel="stylesheet" href="/css/blogOlustur.css" />
+    <link rel="stylesheet" href="/css/blogDuzenle.css" />
+    <link rel="stylesheet" href="/css/yorumDuzenle.css" />
+  
+    <link rel="stylesheet" href="/css/etkinlikler.css" />
+    <link rel="stylesheet" href="/css/tarihteBugun.css" />
+  
+    <link rel="stylesheet" href="/css/oturumAc.css" />
+    <link rel="stylesheet" href="/css/kayitOl.css" />
+  
+    <!-- Form / Modal Bileşenleri -->
+    <link rel="stylesheet" href="/css/yorumModal.css" />
+    <link rel="stylesheet" href="/css/editYorum.css" />
+    <link rel="stylesheet" href="/css/previewImage.css" />
+  
+    <!-- Hesap & Profil -->
+    <link rel="stylesheet" href="/css/hesap.css" />
+    <link rel="stylesheet" href="/css/profile.css" />
+    <link rel="stylesheet" href="/css/sifreYeni.css" />
+    <link rel="stylesheet" href="/css/sifreUnuttum.css" />
+  
+    <!-- Admin -->
+    <link rel="stylesheet" href="/css/adminPanel.css" />
+  
+    <!-- Diğer Sayfalar -->
+    <link rel="stylesheet" href="/css/legal.css" />
+    <link rel="stylesheet" href="/css/error.css" />
+  
+    <!-- 🔧 SON FİKS (Cascade Priority) -->
+    <link rel="stylesheet" href="/css/sonFix.css" />
+  
+    <link rel="stylesheet" href="/css/alerts.css" />
+  
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="/img/kulup_temiz.png" type="image/x-icon" />
+  
+    <!-- Icon Pack -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+    />
+  
+    <!-- Vercel Analytics -->
+    <script defer src="https://vercel.com/analytics/script.js"></script>
+  </head>
+  <body>
+
+    <div id="globalLoading" class="global-loading">
+      <div class="loader"></div>
+      <span>Bağlantı kuruluyor...</span>
+    </div>
+
+    <header class="navbar">
+      <div class="nav-left">
+        <a href="/"><img src="/img/msfltemiz.png" class="logo" alt="Logo 1" /></a>
+        <a href="/"><img src="/img/kulup_temiz.png" class="logo" alt="Logo 2" /></a>
+      </div>
+    
+      <div class="nav-center">
+        <a href="/" class="nav-title">
+          Mustafa Saffet Fen Lisesi Tarih Kulübü
+        </a>
+      </div>
+    
+      <!-- HAMBURGER -->
+      <div class="hamburger" id="hamburger">
+        <i class="fa-solid fa-bars"></i>
+      </div>
+    
+      <!-- MOBIL MENÜ -->
+      <div class="nav-right" id="navMenu">
+    
+        <!-- KAPAT ICONU -->
+        <div class="close-menu" id="closeMenu">
+          <i class="fa-solid fa-xmark"></i>
+        </div>
+    
+        <!-- MENÜ LINKLERI -->
+        <a href="/" class="nav-link">Anasayfa</a>
+        <a href="/hakkinda" class="nav-link">Hakkında</a>
+        <a href="/blog" class="nav-link">Blog</a>
+        <a href="/etkinlikler" class="nav-link">Etkinlikler</a>
+        <a href="/tarihteBugun" class="nav-link">Tarihte Bugün</a>
+    
+          <a href="/kullanici/oturumAc" class="login-btn">
+            <i class="fa-solid fa-right-to-bracket"></i> Oturum Aç
+          </a>
+          <a href="/kullanici/kayitOl" class="register-btn">
+            <i class="fa-solid fa-user-plus"></i> Kayıt Ol
+          </a>
+    
+      </div>
+    </header>
+    
+    <!-- SOSYAL MEDYA PARTIAL ÇAĞIRMA -->
+    <div class="social-media">
+      <a href="https://www.instagram.com/msfl_tarihkulubu/" target="_blank" class="social-group">
+        <img src="/img/socialmedia/instagram.png" class="media-icon" alt="Instagram" />
+        <span class="media-link">@msfltarihkulubu</span>
+      </a>
+    
+      <a href="https://x.com/msfltarihkulubu" target="_blank" class="social-group">
+        <img src="/img/socialmedia/twitter.png" class="media-icon" alt="X (Twitter)" />
+        <span class="media-link">@msfltarihkulubu</span>
+      </a>
+    
+      <a href="https://www.facebook.com/profile.php?id=61584218810881" target="_blank" class="social-group">
+        <img src="/img/socialmedia/facebook.png" class="media-icon" alt="Facebook" />
+        <span class="media-link">/msfltarihkulubu</span>
+      </a>
+    
+      <a href="https://www.youtube.com/@ghvmsfltarihkulubu" target="_blank" class="social-group">
+        <img src="/img/socialmedia/youtube.png" class="media-icon" alt="YouTube" />
+        <span class="media-link">MSFL Tarih Kulübü</span>
+      </a>
+    </div>
+    
+
+    <link rel="stylesheet" href="/css/error.css" />
+
+<section class="error-wrapper">
+  <h1 class="error-title">404 – Sayfa Bulunamadı</h1>
+  <p class="error-text">
+    Aradığın sayfa mevcut değil veya taşınmış olabilir.
+  </p>
+
+  <a href="/" class="error-btn">Ana Sayfaya Dön</a>
+</section>
+
+    <footer class="site-footer">
+    
+      <div class="footer-left">
+        <img
+          src="/img/kulup_temiz.png"
+          class="footer-logo"
+          alt="MSFL Tarih Kulübü"
+        />
+        <span>
+          © 2026 MSFL Tarih Kulübü — Tüm Hakları Saklıdır.
+        </span>
+      </div>
+    
+      <div class="footer-right">
+    
+        <div class="footer-links">
+          <a href="/legal/gizlilik-politikasi">Gizlilik Politikası</a>
+          <a href="/legal/kullanim-sartlari">Kullanım Şartları</a>
+          <a href="/legal/acik-riza-metni">Açık Rıza Metni</a>
+          <a href="/legal/iletisim">İletişim</a>
+          <a href="/legal/site-haritasi">Site Haritası</a>
+        </div>
+    
+        <div class="footer-support">
+          <h4>Yardım & Destek</h4>
+          <p>
+            Yardım ve destek almak ya da kulübümüze katkı sağlamak mı istiyorsun?
+          </p>
+          <a href="/yardim-destek" class="footer-support-btn">
+            Yardım & Destek’e Git →
+          </a>
+        </div>
+    
+      </div>
+    
+    </footer>
+    <script src="/js/script.js" defer></script>
+    <script src="/js/navbar.js" defer></script>
+    <script src="/js/admin.js" defer></script>
+    <script src="/js/sifreUnuttum.js" defer></script>
+    <script src="/js/blogUploadLimit.js" defer></script>
+    <script src="/js/alerts.js" defer></script>
+  </body>
+
+</html>

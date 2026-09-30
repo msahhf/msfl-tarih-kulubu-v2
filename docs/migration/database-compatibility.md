@@ -4,6 +4,38 @@
 
 Bu doküman, mevcut MongoDB veri modellerinin Next.js rewrite'ı ile uyumluluğunu detaylandırır. Mevcut production verilerinin kaybolmaması için kritik öneme sahiptir.
 
+## Implementation Status
+
+**Phase 3 — Database Compatibility**: ✅ **COMPLETED**
+
+### Implemented Components
+
+- ✅ TypeScript domain types (`types/user.ts`, `types/post.ts`, `types/comment.ts`, `types/support-message.ts`, `types/backup.ts`)
+- ✅ MongoDB connection layer with serverless-safe pooling (`lib/db/mongodb.ts`)
+- ✅ ObjectId handling strategy (`lib/db/object-id.ts`)
+- ✅ Repository layer for all collections (`lib/db/repositories/`)
+- ✅ Bcrypt compatibility layer (`lib/auth/bcrypt.ts`)
+- ✅ Date normalization utilities (`lib/db/date-utils.ts`)
+- ✅ Index recommendations documentation (`docs/migration/index-recommendations.md`)
+- ✅ Index setup script (`scripts/setup-indexes.ts`)
+- ✅ Unit tests for repository layer (`lib/db/test-repositories.test.ts`)
+- ✅ Bcrypt compatibility test (`lib/db/test-bcrypt.ts`)
+
+### Test Results
+
+**Bcrypt Compatibility Test**: ✅ PASSED
+- Hash passwords with cost factor 10
+- Verify passwords against hashes
+- Reject incorrect passwords
+
+**Repository Layer Tests**: ✅ PASSED
+- ObjectId handling
+- Legacy field compatibility
+- Optional/null field handling
+- Date handling
+
+**Note**: Production verification still requires checking against actual production database hashes.
+
 ## MongoDB Collections
 
 ### Users Collection
@@ -53,9 +85,10 @@ Bu doküman, mevcut MongoDB veri modellerinin Next.js rewrite'ı ile uyumluluğu
 }
 ```
 
-#### New TypeScript Interface
+#### Implemented TypeScript Interface
 
 ```typescript
+// types/user.ts
 interface User {
   _id: string;
   username: string;
@@ -63,29 +96,12 @@ interface User {
   password: string; // bcrypt hash
   name: string;
   surname: string;
-  role: 'user' | 'admin';
+  role: string;
   date: Date;
   
-  avatar: {
-    url: string;
-    fileId: string;
-    provider: 'imagekit';
-  };
-  
-  coverImage: {
-    url: string;
-    fileId: string;
-    provider: 'imagekit';
-  };
-  
-  social: {
-    instagram: string;
-    x: string;
-    github: string;
-    youtube: string;
-    website: string;
-  };
-  
+  avatar: MediaInfo;
+  coverImage: MediaInfo;
+  social: SocialLinks;
   bio: string;
   
   analyticsCookies: boolean;
@@ -96,33 +112,69 @@ interface User {
   resetCode: string | null;
   resetCodeExpires: Date | null;
 }
+
+interface MediaInfo {
+  url: string;
+  fileId: string;
+  provider: string;
+}
+
+interface SocialLinks {
+  instagram: string;
+  x: string;
+  github: string;
+  youtube: string;
+  website: string;
+}
+```
+
+#### Repository Functions
+
+```typescript
+// lib/db/repositories/user.repository.ts
+- findById(id: string): Promise<User | null>
+- findByUsername(username: string): Promise<User | null>
+- findByEmail(email: string): Promise<User | null>
+- createUser(input: CreateUserInput): Promise<User>
+- updateUser(id: string, input: UpdateUserInput): Promise<User | null>
+- setPasswordReset(id: string, input: PasswordResetInput): Promise<User | null>
+- clearPasswordReset(id: string): Promise<User | null>
+- deleteUser(id: string): Promise<boolean>
+- countUsers(): Promise<number>
 ```
 
 #### Compatibility Notes
 
 **✅ Preserve (No Changes)**:
-- All existing fields must be preserved
-- Bcrypt password hashes must remain compatible
-- ImageKit structure must remain unchanged
-- Social media fields must remain unchanged
-- Cookie preferences must remain unchanged
+- All existing fields preserved in TypeScript interface
+- Bcrypt password hashes compatible (cost factor 10)
+- ImageKit structure unchanged
+- Social media fields unchanged
+- Cookie preferences unchanged
 
-**⚠️ Migration Considerations**:
-- Add email verification status (optional future feature)
-- Add last login tracking (optional future feature)
-- Add account status (active/suspended) (optional future feature)
+**Implementation Details**:
+- Using `bcryptjs` (pure JavaScript) for better cross-platform compatibility
+- Same cost factor (10) as legacy system
+- ObjectId ↔ string conversion at repository boundaries
+- Serverless-safe MongoDB connection pooling
 
 **Bcrypt Compatibility**:
 ```typescript
-// Legacy bcrypt cost: 10
-// New system must support cost 10-12
-import bcrypt from 'bcrypt';
+// lib/auth/bcrypt.ts
+import bcrypt from "bcryptjs";
 
-// Verify existing password
-const isValid = await bcrypt.compare(plainPassword, user.password);
+const SALT_ROUNDS = 10;
 
-// Hash new password (same cost as legacy)
-const hashedPassword = await bcrypt.hash(plainPassword, 10);
+export async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, SALT_ROUNDS);
+}
+
+export async function verifyPassword(
+  password: string,
+  hash: string
+): Promise<boolean> {
+  return bcrypt.compare(password, hash);
+}
 ```
 
 **Critical**: Never re-hash existing passwords. They must continue to work.
@@ -149,43 +201,59 @@ const hashedPassword = await bcrypt.hash(plainPassword, 10);
 }
 ```
 
-#### New TypeScript Interface
+#### Implemented TypeScript Interface
 
 ```typescript
+// types/post.ts
 interface Post {
   _id: string;
   user_id: string; // ObjectId as string
   username: string; // denormalized
   title: string;
   content: string; // HTML content
-  images: Array<{
-    url: string;
-    fileId: string;
-    provider: 'imagekit';
-  }>;
+  images: MediaInfo[];
   date: Date;
 }
+
+interface MediaInfo {
+  url: string;
+  fileId: string;
+  provider: string;
+}
+```
+
+#### Repository Functions
+
+```typescript
+// lib/db/repositories/post.repository.ts
+- findById(id: string): Promise<Post | null>
+- findRecent(limit: number): Promise<Post[]>
+- findPaginated(page: number, pageSize: number): Promise<{ posts: Post[]; total: number; pages: number }>
+- findByUserId(userId: string): Promise<Post[]>
+- createPost(input: CreatePostInput): Promise<Post>
+- updatePost(id: string, input: UpdatePostInput): Promise<Post | null>
+- deletePost(id: string): Promise<boolean>
+- countPosts(): Promise<number>
 ```
 
 #### Compatibility Notes
 
 **✅ Preserve (No Changes)**:
-- All existing fields must be preserved
-- ImageKit structure must remain unchanged
-- HTML content must be preserved (but sanitized on render)
-- Denormalized username must be preserved
+- All existing fields preserved in TypeScript interface
+- ImageKit structure unchanged
+- HTML content preserved (sanitization to be added in rendering layer)
+- Denormalized username preserved
 
-**⚠️ Migration Considerations**:
-- Add slug generation (optional future feature)
-- Add tags/categories (optional future feature)
-- Add published/draft status (optional future feature)
-- Add featured flag (optional future feature)
+**Implementation Details**:
+- Pagination support built into repository
+- Date sorting for recent posts
+- User-specific post queries
 
 **HTML Content Sanitization**:
 ```typescript
+// To be implemented in rendering layer (Phase 5)
 import DOMPurify from 'dompurify';
 
-// Render with sanitization
 const sanitizedContent = DOMPurify.sanitize(post.content);
 ```
 
@@ -206,9 +274,10 @@ const sanitizedContent = DOMPurify.sanitize(post.content);
 }
 ```
 
-#### New TypeScript Interface
+#### Implemented TypeScript Interface
 
 ```typescript
+// types/comment.ts
 interface Comment {
   _id: string;
   post_id: string; // ObjectId as string
@@ -219,17 +288,31 @@ interface Comment {
 }
 ```
 
+#### Repository Functions
+
+```typescript
+// lib/db/repositories/comment.repository.ts
+- findById(id: string): Promise<Comment | null>
+- findByPostId(postId: string): Promise<Comment[]>
+- findByUserId(userId: string): Promise<Comment[]>
+- createComment(input: CreateCommentInput): Promise<Comment>
+- updateComment(id: string, input: UpdateCommentInput): Promise<Comment | null>
+- deleteComment(id: string): Promise<boolean>
+- deleteCommentsByPostId(postId: string): Promise<number>
+- countComments(): Promise<number>
+```
+
 #### Compatibility Notes
 
 **✅ Preserve (No Changes)**:
-- All existing fields must be preserved
-- Denormalized username must be preserved
-- Flat comment structure must be preserved
+- All existing fields preserved in TypeScript interface
+- Denormalized username preserved
+- Flat comment structure preserved
 
-**⚠️ Migration Considerations**:
-- Add parent comment (nested comments) (optional future feature)
-- Add edit history (optional future feature)
-- Add status (approved/hidden) (optional future feature)
+**Implementation Details**:
+- Cascade delete support (delete comments when post deleted)
+- Date sorting for chronological display
+- User-specific comment history queries
 
 **Critical**: Do not implement nested comments in initial rewrite. Keep flat structure.
 
@@ -251,9 +334,10 @@ interface Comment {
 }
 ```
 
-#### New TypeScript Interface
+#### Implemented TypeScript Interface
 
 ```typescript
+// types/support-message.ts
 interface SupportMessage {
   _id: string;
   name: string | null;
@@ -261,22 +345,35 @@ interface SupportMessage {
   topic: string;
   message: string;
   user_id: string | null; // ObjectId as string
-  status: 'new' | 'read' | 'in-progress' | 'resolved';
+  status: string;
   createdAt: Date;
   updatedAt: Date;
 }
 ```
 
+#### Repository Functions
+
+```typescript
+// lib/db/repositories/support-message.repository.ts
+- findById(id: string): Promise<SupportMessage | null>
+- findFiltered(filters: { status?: string; email?: string }): Promise<SupportMessage[]>
+- createMessage(input: CreateSupportMessageInput): Promise<SupportMessage>
+- updateStatus(id: string, input: UpdateSupportMessageInput): Promise<SupportMessage | null>
+- deleteMessage(id: string): Promise<boolean>
+- countMessages(filters?: { status?: string }): Promise<number>
+```
+
 #### Compatibility Notes
 
 **✅ Preserve (No Changes)**:
-- All existing fields must be preserved
-- Status workflow must be preserved
-- Timestamps must be preserved
+- All existing fields preserved in TypeScript interface
+- Status workflow preserved
+- Timestamps preserved
 
-**⚠️ Migration Considerations**:
-- Add canned responses (optional future feature)
-- Add email notifications (optional future feature)
+**Implementation Details**:
+- Filter support for admin panel (by status, email)
+- Status update with automatic updatedAt timestamp
+- Count queries for admin dashboard
 
 **Critical**: Status values must be compatible with existing admin panel.
 
@@ -304,86 +401,167 @@ interface SupportMessage {
 }
 ```
 
-#### New TypeScript Interface
+#### Implemented TypeScript Interface
 
 ```typescript
+// types/backup.ts
 interface Backup {
   _id: string;
   userId: string; // ObjectId as string
-  username: string;
-  email: string;
+  username: string | null;
+  email: string | null;
   deletedAt: Date;
   
   ipHistory: string[];
-  loginHistory: any[];
-  deviceInfo: any[];
+  loginHistory: object[];
+  deviceInfo: object[];
   
-  userData: {
-    profile: User;
-    posts: Post[];
-    comments: Comment[];
-  };
+  userData: UserData;
 }
+
+interface UserData {
+  profile: object;
+  posts: object[];
+  comments: object[];
+}
+```
+
+#### Repository Functions
+
+```typescript
+// lib/db/repositories/backup.repository.ts
+- findById(id: string): Promise<Backup | null>
+- findByUserId(userId: string): Promise<Backup[]>
+- createBackup(input: CreateBackupInput): Promise<Backup>
+- deleteBackup(id: string): Promise<boolean>
+- countBackups(): Promise<number>
 ```
 
 #### Compatibility Notes
 
 **✅ Preserve (No Changes)**:
-- All existing fields must be preserved
-- Backup structure must remain unchanged
+- All existing fields preserved in TypeScript interface
+- Backup structure unchanged
+- User data structure preserved as objects for flexibility
 
-**⚠️ Migration Considerations**:
-- Add restore functionality (optional future feature)
-- Add cleanup policy (optional future feature)
+**Implementation Details**:
+- User backup history queries
+- Date sorting for most recent backups
+- Flexible object storage for user data
 
 **Critical**: Backup system must work exactly as legacy. No data loss on account deletion.
 
 ## Index Strategy
 
-### Current Indexes (Inferred from Usage)
+### Current Indexes (From Legacy Mongoose)
 
 ```javascript
-// Users
+// Users (enforced by Mongoose unique constraints)
 db.users.createIndex({ username: 1 }, { unique: true });
 db.users.createIndex({ email: 1 }, { unique: true });
-db.users.createIndex({ role: 1 });
 
-// Posts
+// Posts (inferred from usage)
 db.posts.createIndex({ user_id: 1 });
-db.posts.createIndex({ username: 1 });
 db.posts.createIndex({ date: -1 });
 
-// Comments
+// Comments (inferred from usage)
 db.comments.createIndex({ post_id: 1 });
 db.comments.createIndex({ user_id: 1 });
-db.comments.createIndex({ username: 1 });
 db.comments.createIndex({ date: -1 });
 
-// SupportMessage
-db.supportmessages.createIndex({ email: 1 });
-db.supportmessages.createIndex({ user_id: 1 });
+// SupportMessage (inferred from usage)
 db.supportmessages.createIndex({ status: 1 });
 db.supportmessages.createIndex({ createdAt: -1 });
+db.supportmessages.createIndex({ email: 1 });
 
-// Backup
+// Backup (inferred from usage)
 db.backups.createIndex({ userId: 1 });
 db.backups.createIndex({ deletedAt: -1 });
 ```
 
-### New Index Recommendations
+### Implemented Index Recommendations
 
+**Documentation**: `docs/migration/index-recommendations.md`
+
+**Setup Script**: `scripts/setup-indexes.ts`
+
+**Recommended Indexes**:
 ```javascript
-// Keep all existing indexes
-// Add compound indexes for common queries
+// Comments (high priority - very frequent queries)
+db.comments.createIndex({ post_id: 1, date: 1 }, { background: true });
+db.comments.createIndex({ user_id: 1, date: -1 }, { background: true });
 
-// Posts - Search optimization
-db.posts.createIndex({ title: "text", content: "text" });
+// Posts (medium priority - date sorting benefits)
+db.posts.createIndex({ date: -1 }, { background: true });
+db.posts.createIndex({ user_id: 1, date: -1 }, { background: true });
 
-// Comments - Moderation optimization
-db.comments.createIndex({ post_id: 1, date: -1 });
+// SupportMessage (low priority - admin-only)
+db.supportmessages.createIndex({ status: 1, createdAt: -1 }, { background: true });
+db.supportmessages.createIndex({ email: 1 }, { background: true });
 
-// SupportMessage - Admin filtering
-db.supportmessages.createIndex({ status: 1, createdAt: -1 });
+// Backup (low priority - infrequent)
+db.backups.createIndex({ userId: 1, deletedAt: -1 }, { background: true });
+```
+
+**Important**:
+- Index creation is NOT automatic
+- Run manually after review: `npx tsx scripts/setup-indexes.ts`
+- Use `background: true` for large collections
+- Test on staging environment first
+
+## ObjectId Handling Strategy
+
+### Implemented Strategy
+
+**Documentation**: `lib/db/object-id.ts`
+
+**Strategy**: Use strings throughout the application, convert to ObjectId only at database boundaries.
+
+**Rationale**:
+- Strings are easier to work with in URLs, forms, and APIs
+- ObjectId conversion happens only in repository layer
+- Reduces type conversion complexity in business logic
+- Compatible with JSON serialization
+
+**Rules**:
+- All public APIs use string IDs
+- Repository layer converts string → ObjectId for queries
+- Repository layer converts ObjectId → string for responses
+- Never expose ObjectId to client components
+
+**Implementation**:
+```typescript
+// lib/db/object-id.ts
+export function isValidObjectId(id: string): boolean {
+  try {
+    return ObjectId.isValid(id);
+  } catch {
+    return false;
+  }
+}
+
+export function toObjectId(id: string): ObjectId {
+  if (!isValidObjectId(id)) {
+    throw new Error(`Invalid ObjectId: ${id}`);
+  }
+  return new ObjectId(id);
+}
+
+export function toStringId(id: ObjectId | string): string {
+  if (typeof id === "string") {
+    return id;
+  }
+  return id.toString();
+}
+```
+
+**Usage in Repositories**:
+```typescript
+// Convert string to ObjectId for queries
+const document = await collection.findOne({ _id: toObjectId(id) });
+
+// Convert ObjectId to string for responses
+return document._id.toString();
 ```
 
 ## Data Migration Strategy
@@ -642,3 +820,92 @@ The database compatibility strategy prioritizes:
 5. **Rollback Ready**: Quick recovery if needed
 
 The new system will work with existing MongoDB data without requiring immediate schema changes. Future enhancements can be added incrementally with backward compatibility in mind.
+
+---
+
+## Phase 3 Implementation Summary
+
+### Completed Tasks
+
+**TypeScript Domain Types**:
+- ✅ `types/user.ts` - User interface with all legacy fields
+- ✅ `types/post.ts` - Post interface with MediaInfo
+- ✅ `types/comment.ts` - Comment interface
+- ✅ `types/support-message.ts` - SupportMessage interface
+- ✅ `types/backup.ts` - Backup interface with UserData
+- ✅ `types/index.ts` - Central exports
+
+**Database Layer**:
+- ✅ `lib/db/mongodb.ts` - Serverless-safe MongoDB connection with pooling
+- ✅ `lib/db/object-id.ts` - ObjectId handling strategy (string ↔ ObjectId)
+- ✅ `lib/db/date-utils.ts` - Date normalization utilities
+- ✅ `lib/db/repositories/user.repository.ts` - User CRUD operations
+- ✅ `lib/db/repositories/post.repository.ts` - Post CRUD with pagination
+- ✅ `lib/db/repositories/comment.repository.ts` - Comment CRUD with cascade delete
+- ✅ `lib/db/repositories/support-message.repository.ts` - Support message management
+- ✅ `lib/db/repositories/backup.repository.ts` - Backup operations
+- ✅ `lib/db/repositories/index.ts` - Central repository exports
+
+**Authentication Layer**:
+- ✅ `lib/auth/bcrypt.ts` - Bcrypt compatibility layer (bcryptjs, cost 10)
+- ✅ `lib/db/test-bcrypt.ts` - Bcrypt compatibility test script
+
+**Testing**:
+- ✅ `lib/db/test-repositories.test.ts` - Unit tests for repository layer
+- ✅ Bcrypt compatibility test: PASSED
+- ✅ Repository unit tests: PASSED
+
+**Documentation**:
+- ✅ `docs/migration/index-recommendations.md` - Index strategy documentation
+- ✅ `scripts/setup-indexes.ts` - Manual index creation script
+
+**Configuration**:
+- ✅ Database name: `tarihKulubu` (from environment variable)
+- ✅ Serverless-safe connection pooling configured
+- ✅ ObjectId strategy: strings in app, ObjectId at DB boundary
+
+### Database Connection Availability
+
+**Status**: No local MongoDB connection available during Phase 3.
+
+**Impact**:
+- Unit tests completed successfully with mocks
+- Integration tests require real database connection
+- Production verification pending (requires production database access)
+
+### Test Results Summary
+
+**Bcrypt Compatibility Test**: ✅ PASSED
+```
+Testing bcrypt compatibility...
+✅ Bcrypt compatibility test PASSED
+The current bcrypt implementation can:
+  - Hash passwords with cost factor 10
+  - Verify passwords against hashes
+  - Reject incorrect passwords
+```
+
+**Repository Layer Tests**: ✅ PASSED
+```
+Running repository layer tests...
+Testing ObjectId handling... ✅ PASSED
+Testing legacy field compatibility... ✅ PASSED
+Testing optional/null field handling... ✅ PASSED
+Testing date handling... ✅ PASSED
+✅ All repository layer tests passed
+```
+
+### Remaining Database Risks
+
+1. **Production Verification**: Bcrypt hashes need verification against actual production database
+2. **Index Creation**: Indexes not yet created (manual process required)
+3. **Integration Testing**: Real database connection tests pending
+4. **Data Migration**: No schema changes planned, but data integrity verification needed
+
+### Dependencies for Phase 4
+
+Before starting Phase 4 (Authentication):
+- MongoDB connection credentials must be available
+- Production database connection should be tested
+- Index creation should be reviewed and executed
+- Data integrity should be verified
