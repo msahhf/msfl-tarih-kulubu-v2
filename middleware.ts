@@ -15,6 +15,13 @@ const adminRoutes = ["/admin"];
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+
+  // Admin login page must stay reachable for anonymous users (otherwise
+  // the /admin/* matcher redirects it to itself in an infinite loop).
+  if (path.startsWith("/admin/giris")) {
+    return NextResponse.next();
+  }
+
   const isProtectedRoute = protectedRoutes.some((route) => path.startsWith(route));
   const isAdminRoute = adminRoutes.some((route) => path.startsWith(route));
 
