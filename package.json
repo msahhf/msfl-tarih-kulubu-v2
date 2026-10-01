@@ -2,7 +2,7 @@
   "name": "msfl-tarih-kulubu-v2",
   "version": "2.0.0",
   "description": "MSFL Tarih Kulübü - Modern Next.js rewrite",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
