@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { SafeImage } from "@/components/ui/SafeImage";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { postRepository } from "@/lib/db/repositories";
@@ -66,87 +66,135 @@ export default async function BlogDetailPage({ params, searchParams }: BlogDetai
 
   const safeContent = sanitizeBlogContent(post.content);
   const images = post.images || [];
+  const heroImage = images[0]?.url;
+  const galleryImages = images.slice(1);
 
   return (
-    <div className="space-y-16 py-16">
-      <Container>
-        <div className="max-w-3xl mx-auto space-y-12">
+    <div className="pb-16">
+      {/* Kapak hero — eski sitedeki koyu blog detay başlığı */}
+      <section className="relative overflow-hidden border-b-2 border-gold-bright/60">
+        <SafeImage
+          src={heroImage || "/img/bg/arsiv.webp"}
+          fallbackSrc="/img/bg/arsiv.webp"
+          alt=""
+          aria-hidden="true"
+          fill
+          sizes="100vw"
+          priority
+          className="object-cover"
+        />
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/80 to-ink/95"
+          aria-hidden="true"
+        />
+        <Container className="relative py-20 sm:py-28">
+          <div className="mx-auto max-w-3xl space-y-4">
+            <span className="inline-block border border-gold-bright/50 bg-gold-bright/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-gold-bright rounded-sm">
+              Tarih Kulübü Arşivi
+            </span>
+            <h1 className="font-display text-3xl font-bold leading-tight text-[#faf6ec] sm:text-4xl lg:text-5xl">
+              {post.title}
+            </h1>
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#faf6ec]/80">
+              <time dateTime={new Date(post.date).toISOString()}>
+                {new Date(post.date).toLocaleDateString("tr-TR")}
+              </time>
+              <span aria-hidden="true" className="text-gold-bright">
+                ◆
+              </span>
+              <Link
+                href={`/u/${post.username}`}
+                className="font-semibold text-gold-bright hover:text-[#ebd68f] transition-colors"
+              >
+                @{post.username}
+              </Link>
+            </p>
+
+            {(isOwner || isAdmin) && (
+              <div className="flex items-center gap-4 pt-2">
+                <Link
+                  href={`/blog/duzenle/${id}`}
+                  className="text-xs font-semibold text-gold-bright hover:underline"
+                >
+                  Yazıyı Düzenle
+                </Link>
+                <form action={deletePostAction}>
+                  <input type="hidden" name="postId" value={id} />
+                  <button
+                    type="submit"
+                    className="text-xs font-semibold text-[#f0b4b4] hover:underline"
+                  >
+                    Yazıyı Sil
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        </Container>
+      </section>
+
+      <Container className="pt-12">
+        <div className="mx-auto max-w-3xl space-y-12">
           {resolvedSearch.success && (
-            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-lg text-sm">
+            <div role="status" className="p-4 bg-success/10 border-l-2 border-success text-success rounded-sm text-sm">
               {resolvedSearch.success}
             </div>
           )}
 
           {resolvedSearch.error && (
-            <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg text-sm">
+            <div role="alert" className="p-4 bg-destructive/10 border-l-2 border-destructive text-destructive rounded-sm text-sm">
               {resolvedSearch.error}
             </div>
           )}
 
-          {/* Post Header & Content */}
-          <article className="bg-surface p-8 sm:p-12 rounded-xl border border-border space-y-8">
-            <div className="space-y-4 border-b border-border pb-6">
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>{new Date(post.date).toLocaleDateString("tr-TR")}</span>
-                <Link href={`/u/${post.username}`} className="font-medium text-accent hover:underline">
-                  @{post.username}
-                </Link>
-              </div>
-              <h1 className="text-3xl sm:text-4xl font-display font-bold text-foreground">
-                {post.title}
-              </h1>
+          {/* Yazı gövdesi */}
+          <article className="bg-surface p-8 sm:p-12 rounded-md border border-border border-t-2 border-t-accent shadow-sm">
+            <div
+              className="article-body max-w-none"
+              dangerouslySetInnerHTML={{ __html: safeContent }}
+            />
 
-              {(isOwner || isAdmin) && (
-                <div className="flex items-center gap-4 pt-2">
+            {galleryImages.length > 0 && (
+              <div
+                className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2"
+                role="group"
+                aria-label="Yazı görselleri"
+              >
+                {galleryImages.map((img, i) => (
                   <Link
-                    href={`/blog/duzenle/${id}`}
-                    className="text-xs text-accent hover:underline font-semibold"
+                    key={img.fileId || img.url}
+                    href={img.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative overflow-hidden rounded-md border border-border"
                   >
-                    Yazıyı Düzenle
-                  </Link>
-                  <form action={deletePostAction}>
-                    <input type="hidden" name="postId" value={id} />
-                    <button
-                      type="submit"
-                      className="text-xs text-destructive hover:underline font-semibold"
-                    >
-                      Yazıyı Sil
-                    </button>
-                  </form>
-                </div>
-              )}
-            </div>
-
-            {images.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" role="group" aria-label="Yazı görselleri">
-                {images.map((img, i) => (
-                  <div key={img.fileId || img.url} className="relative rounded-lg overflow-hidden border border-border">
-                    <Image
+                    <SafeImage
                       src={img.url}
-                      alt={`${post.title} — görsel ${i + 1}`}
-                      width={800}
-                      height={450}
-                      className="w-full h-auto object-cover"
+                      fallbackSrc="/img/default-blog.webp"
+                      alt={`${post.title} — görsel ${i + 2}`}
+                      width={900}
+                      height={600}
+                      className="h-auto w-full object-cover transition-transform duration-300 hover:scale-[1.02]"
                     />
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}
-
-            <div
-              className="prose prose-neutral dark:prose-invert max-w-none text-muted-foreground leading-relaxed space-y-4"
-              dangerouslySetInnerHTML={{ __html: safeContent }}
-            />
           </article>
 
-          {/* Comments Section */}
-          <section id="comments" className="space-y-8 pt-8 border-t border-border">
-            <h2 className="text-2xl font-display font-bold">Yorumlar ({comments.length})</h2>
+          {/* Yorumlar */}
+          <section id="comments" className="space-y-8 border-t-2 border-foreground/80 pt-8">
+            <h2 className="text-2xl font-display font-bold">
+              Yorumlar ({comments.length})
+            </h2>
 
             {isAuth ? (
-              <form action={addCommentAction} className="space-y-4 bg-surface p-6 rounded-xl border border-border">
+              <form
+                action={addCommentAction}
+                className="space-y-4 bg-surface p-6 rounded-md border border-border"
+              >
                 <input type="hidden" name="postId" value={id} />
-                <label htmlFor="comment-content" className="sr-only">
+                <label htmlFor="comment-content" className="field-label">
                   Yorumunuz
                 </label>
                 <textarea
@@ -156,18 +204,20 @@ export default async function BlogDetailPage({ params, searchParams }: BlogDetai
                   required
                   maxLength={2000}
                   placeholder="Düşüncelerini paylaş..."
-                  className="w-full p-3 bg-background rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                  className="field-input"
                 />
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-accent text-accent-foreground font-medium text-sm rounded-lg hover:opacity-90 transition-opacity"
+                  className="px-6 py-2.5 bg-accent text-accent-foreground font-medium text-sm border border-accent rounded-sm hover:bg-accent-strong hover:border-accent-strong transition-colors"
                 >
                   Yorum Yap
                 </button>
               </form>
             ) : (
-              <div className="p-6 bg-surface rounded-xl border border-border text-center space-y-2">
-                <p className="text-muted-foreground text-sm">Yorum yapabilmek için oturum açman gerekiyor.</p>
+              <div className="p-6 bg-surface rounded-md border border-border text-center space-y-2">
+                <p className="text-muted-foreground text-sm">
+                  Yorum yapabilmek için oturum açman gerekiyor.
+                </p>
                 <Link href="/giris" className="inline-block text-sm font-semibold text-accent hover:underline">
                   Giriş Yap →
                 </Link>
@@ -176,7 +226,9 @@ export default async function BlogDetailPage({ params, searchParams }: BlogDetai
 
             <div className="space-y-4">
               {comments.length === 0 ? (
-                <p className="text-muted-foreground text-sm italic">Henüz yorum yapılmamış. İlk yorumu sen yap!</p>
+                <p className="text-muted-foreground text-sm italic">
+                  Henüz yorum yapılmamış. İlk yorumu sen yap!
+                </p>
               ) : (
                 comments.map((comment) => {
                   const commentId = comment._id.toString();
@@ -184,14 +236,22 @@ export default async function BlogDetailPage({ params, searchParams }: BlogDetai
                   const canEditComment = isCommentOwner || isAdmin;
 
                   return (
-                    <div key={commentId} className="p-6 bg-surface rounded-xl border border-border space-y-2">
+                    <div
+                      key={commentId}
+                      className="p-6 bg-surface rounded-md border border-border border-l-2 border-l-gold space-y-2"
+                    >
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <Link href={`/u/${comment.username}`} className="font-semibold text-foreground hover:underline">
+                        <Link
+                          href={`/u/${comment.username}`}
+                          className="font-semibold text-foreground hover:text-accent transition-colors"
+                        >
                           @{comment.username}
                         </Link>
                         <span>{new Date(comment.date).toLocaleDateString("tr-TR")}</span>
                       </div>
-                      <p className="text-muted-foreground text-sm leading-relaxed">{comment.content}</p>
+                      <p className="text-foreground/85 text-sm leading-relaxed">
+                        {comment.content}
+                      </p>
                       {canEditComment && (
                         <div className="flex items-center gap-4 pt-2">
                           <Link
@@ -219,8 +279,11 @@ export default async function BlogDetailPage({ params, searchParams }: BlogDetai
             </div>
           </section>
 
-          <div className="pt-4">
-            <Link href="/blog" className="text-sm font-semibold text-accent hover:underline">
+          <div className="pt-2">
+            <Link
+              href="/blog"
+              className="text-sm font-semibold text-accent underline-offset-4 decoration-gold/60 hover:decoration-accent"
+            >
               ← Arşive Geri Dön
             </Link>
           </div>

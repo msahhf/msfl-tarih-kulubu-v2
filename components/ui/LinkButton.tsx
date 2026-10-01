@@ -11,12 +11,15 @@ export function LinkButton({
   variant?: "primary" | "secondary" | "ghost";
   className?: string;
 }) {
-  const baseStyles = "inline-block px-6 py-3 rounded-lg font-medium transition-opacity hover:opacity-90";
+  const baseStyles =
+    "inline-block px-6 py-3 rounded-sm font-medium transition-colors duration-150 text-center";
 
   const variants = {
-    primary: "bg-accent text-accent-foreground",
-    secondary: "border border-border hover:bg-surface",
-    ghost: "hover:bg-surface",
+    primary:
+      "bg-accent text-accent-foreground border border-accent hover:bg-accent-strong hover:border-accent-strong",
+    secondary:
+      "border border-border-strong text-foreground hover:border-accent hover:text-accent",
+    ghost: "hover:bg-border/40 text-foreground",
   };
 
   return (

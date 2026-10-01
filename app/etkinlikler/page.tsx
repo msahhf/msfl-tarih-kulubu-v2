@@ -1,5 +1,10 @@
 import { Container } from "@/components/ui/Container";
-import { SectionHeader } from "@/components/ui/SectionHeader";
+import { PageHero } from "@/components/ui/PageHero";
+
+export const metadata = {
+  title: "Etkinlikler",
+  description: "MSFL Tarih Kulübü 2025 - 2026 eğitim öğretim yılı etkinlik planı.",
+};
 
 const eventsPlan = [
   { month: "2025 - Eylül", description: "Kulüp vizyonu, görevler, dönem hedeflerinin belirlenmesi" },
@@ -16,31 +21,37 @@ const eventsPlan = [
 
 export default function EtkinliklerPage() {
   return (
-    <div className="space-y-16 py-16">
-      <Container>
-        <div className="max-w-4xl mx-auto space-y-12">
-          <SectionHeader
-            title="2025 - 2026 Yıllık Planımız"
-            description="MSFL Tarih Kulübü'nün akademik yıl boyunca gerçekleştireceği etkinlik ve projeler takvimi."
-            className="text-center"
-          />
+    <div>
+      <PageHero
+        eyebrow="Etkinlikler"
+        title="2025 - 2026 Yıllık Planımız"
+        description="MSFL Tarih Kulübü'nün akademik yıl boyunca gerçekleştireceği etkinlik ve projeler takvimi."
+        image="/img/bg/plan.webp"
+      />
 
-          <div className="space-y-6">
-            {eventsPlan.map((item, index) => (
-              <div
-                key={index}
-                className="p-6 bg-surface rounded-xl border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
-              >
-                <div className="font-display font-bold text-accent min-w-[160px]">
-                  {item.month}
-                </div>
-                <div className="text-muted-foreground text-sm sm:text-base flex-1">
-                  {item.description}
-                </div>
+      <Container className="py-16">
+        <ol className="mx-auto max-w-3xl">
+          {eventsPlan.map((item, index) => (
+            <li key={item.month} className="relative flex gap-6 pb-10 last:pb-0">
+              {/* Zaman çizgisi */}
+              <div className="relative flex flex-col items-center" aria-hidden="true">
+                <span className="flex h-4 w-4 shrink-0 rounded-full border-2 border-accent bg-surface" />
+                {index < eventsPlan.length - 1 && (
+                  <span className="w-px flex-1 bg-border-strong" />
+                )}
               </div>
-            ))}
-          </div>
-        </div>
+
+              <div className="paper-panel -mt-1 flex-1 p-5 space-y-1">
+                <p className="font-display text-lg font-bold text-accent">
+                  {item.month}
+                </p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {item.description}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
       </Container>
     </div>
   );

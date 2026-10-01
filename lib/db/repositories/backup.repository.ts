@@ -24,6 +24,13 @@ export async function findByUserId(userId: string): Promise<Backup[]> {
     .toArray() as unknown as Promise<Backup[]>;
 }
 
+/**
+ * Hesap silme öncesi alınan arşiv kaydı.
+ *
+ * Retention: kayıtlar `deletedAt` alanından itibaren 30 gün (1 ay) tutulur;
+ * süre MongoDB TTL index'i (bkz. lib/db/mongodb.ts ensureIndexes) tarafından
+ * otomatik uygulanır.
+ */
 export async function createBackup(input: CreateBackupInput): Promise<Backup> {
   const db = await getDb();
   const collection = db.collection(COLLECTION_NAME);

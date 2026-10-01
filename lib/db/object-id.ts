@@ -39,3 +39,19 @@ export function toStringId(id: ObjectId | string): string {
   }
   return id.toString();
 }
+
+/**
+ * Match values for legacy reference fields (user_id, post_id).
+ *
+ * Legacy Mongoose stored these fields as ObjectId (schema refs), while the
+ * rewrite writes plain strings. MongoDB queries are type-strict, so reads on
+ * these fields must match both shapes until old records are migrated.
+ *
+ * Returns the id itself when it is not a valid ObjectId hex string.
+ */
+export function idMatchValues(id: string): (ObjectId | string)[] {
+  if (!isValidObjectId(id)) {
+    return [id];
+  }
+  return [toObjectId(id), id];
+}

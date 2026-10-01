@@ -7,12 +7,13 @@ export function Badge({
   variant?: "default" | "accent" | "destructive";
   className?: string;
 }) {
-  const baseStyles = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium";
+  const baseStyles =
+    "inline-flex items-center px-2.5 py-0.5 rounded-sm text-xs font-semibold uppercase tracking-[0.08em]";
 
   const variants = {
-    default: "bg-surface border border-border text-foreground",
-    accent: "bg-accent text-accent-foreground",
-    destructive: "bg-destructive text-destructive-foreground",
+    default: "bg-surface border border-border text-muted",
+    accent: "bg-accent text-accent-foreground border border-accent",
+    destructive: "bg-destructive text-destructive-foreground border border-destructive",
   };
 
   return (

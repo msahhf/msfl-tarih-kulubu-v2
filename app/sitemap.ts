@@ -24,7 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   try {
-    const { posts } = await postRepository.findPaginated(1, 100);
+    const posts = await postRepository.findAll();
     const blogRoutes = posts.map((post) => ({
       url: `${BASE_URL}/blog/${post._id.toString()}`,
       lastModified: new Date(post.date),

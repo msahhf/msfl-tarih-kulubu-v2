@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { SafeImage } from "@/components/ui/SafeImage";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { userRepository, postRepository, commentRepository } from "@/lib/db/repositories";
@@ -66,46 +66,44 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
   ) as [string, string][];
 
   return (
-    <div className="space-y-16 py-16">
+    <div className="py-16">
       <Container>
-        <div className="max-w-4xl mx-auto space-y-12">
-          {/* Profile Header */}
-          <div className="bg-surface rounded-xl border border-border space-y-6 shadow-sm overflow-hidden">
-            {user.coverImage?.url ? (
-              <div className="relative w-full aspect-[4/1] overflow-hidden border-b border-border">
-                <Image
-                  src={user.coverImage.url}
-                  alt={`${user.username} kapak fotoğrafı`}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 896px"
-                  className="object-cover"
-                />
-              </div>
-            ) : null}
+        <div className="max-w-4xl mx-auto space-y-14">
+          {/* Üye kaydı — katalog kartı */}
+          <section className="bg-surface rounded-md border border-border shadow-sm overflow-hidden">
+            <div className="relative w-full aspect-[4/1] overflow-hidden border-b border-border">
+              <SafeImage
+                src={user.coverImage?.url || "/img/bg/hero.webp"}
+                fallbackSrc="/img/bg/hero.webp"
+                alt={user.coverImage?.url ? `${user.username} kapak fotoğrafı` : ""}
+                fill
+                sizes="(max-width: 768px) 100vw, 896px"
+                className="object-cover"
+              />
+              <div
+                aria-hidden="true"
+                className="absolute inset-x-0 bottom-0 h-1 bg-gold-bright/80"
+              />
+            </div>
             <div className="p-8 pt-6 space-y-6">
               <div className="flex flex-col sm:flex-row items-center gap-6">
-                {user.avatar?.url ? (
-                  <Image
-                    src={user.avatar.url}
-                    alt={`${user.username} profil fotoğrafı`}
-                    width={96}
-                    height={96}
-                    className="w-24 h-24 rounded-full object-cover border border-border"
-                  />
-                ) : (
-                  <div
-                    aria-hidden="true"
-                    className="w-24 h-24 rounded-full bg-accent/10 flex items-center justify-center text-accent font-display font-bold text-3xl"
-                  >
-                    {user.name?.[0]?.toUpperCase() || user.username[0].toUpperCase()}
-                  </div>
-                )}
+                <SafeImage
+                  src={user.avatar?.url || "/img/default-avatar.webp"}
+                  fallbackSrc="/img/default-avatar.webp"
+                  alt={user.avatar?.url ? `${user.username} profil fotoğrafı` : ""}
+                  width={96}
+                  height={96}
+                  className="w-24 h-24 rounded-full object-cover border-2 border-gold-bright/70 p-0.5 bg-surface"
+                />
                 <div className="space-y-2 text-center sm:text-left">
-                  <h1 className="text-3xl font-display font-bold">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-gold">
+                    Kulüp Üyesi
+                  </p>
+                  <h1 className="text-3xl font-display font-bold text-foreground">
                     {user.name} {user.surname}
                   </h1>
                   <p className="text-muted-foreground font-medium">@{user.username}</p>
-                  {user.bio && <p className="text-muted-foreground text-sm max-w-lg">{user.bio}</p>}
+                  {user.bio && <p className="text-muted-foreground text-sm max-w-lg leading-relaxed">{user.bio}</p>}
                 </div>
               </div>
 
@@ -117,7 +115,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                         href={socialHref(key, value)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-block px-3 py-1.5 text-xs font-semibold border border-border rounded-full hover:bg-accent/10 hover:text-accent transition-colors"
+                        className="inline-block px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] border border-border-strong rounded-sm text-muted hover:border-accent hover:text-accent transition-colors"
                       >
                         {SOCIAL_LABELS[key] ?? key}
                       </a>
@@ -126,60 +124,83 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                 </ul>
               )}
 
-              <div className="grid grid-cols-2 sm:grid-cols-2 gap-4 pt-4 border-t border-border text-center">
+              <div className="rule-double grid grid-cols-2 gap-4 pt-5 text-center">
                 <div>
-                  <p className="text-2xl font-display font-bold text-accent">{posts.length}</p>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Yazılar</p>
+                  <p className="text-3xl font-display font-bold text-accent">{posts.length}</p>
+                  <p className="text-[0.65rem] text-muted-foreground uppercase tracking-[0.22em] font-semibold">Yazı</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-display font-bold text-accent">{comments.length}</p>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Yorumlar</p>
+                  <p className="text-3xl font-display font-bold text-accent">{comments.length}</p>
+                  <p className="text-[0.65rem] text-muted-foreground uppercase tracking-[0.22em] font-semibold">Yorum</p>
                 </div>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* User Posts */}
-          <div className="space-y-6">
-            <h2 className="text-2xl font-display font-bold tracking-tight">Kullanıcının Yazıları</h2>
+          {/* Yazılar */}
+          <section className="space-y-6">
+            <div className="space-y-2 border-b-2 border-foreground/80 pb-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">
+                Külliyat
+              </p>
+              <h2 className="text-2xl font-display font-bold tracking-tight">Kullanıcının Yazıları</h2>
+            </div>
             {posts.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Bu kullanıcının henüz yayınlanmış yazısı yok.</p>
+              <p className="text-muted-foreground text-sm border border-dashed border-border-strong rounded-md p-6">
+                Bu kullanıcının henüz yayınlanmış yazısı yok.
+              </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {posts.map((post) => (
-                  <article key={post._id.toString()} className="p-6 bg-surface rounded-xl border border-border space-y-3">
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(post.date).toLocaleDateString("tr-TR")}
-                    </span>
-                    <h3 className="font-display font-bold text-lg">
-                      <Link href={`/blog/${post._id.toString()}`} className="hover:text-accent transition-colors">
+                  <article
+                    key={post._id.toString()}
+                    className="p-6 bg-surface rounded-md border border-border border-t-2 border-t-accent space-y-3 hover:border-border-strong hover:shadow-md transition-all duration-150"
+                  >
+                    <p className="text-xs text-muted-foreground">
+                      <span>{new Date(post.date).toLocaleDateString("tr-TR")}</span>
+                    </p>
+                    <h3 className="font-display font-bold text-lg text-foreground">
+                      <Link
+                        href={`/blog/${post._id.toString()}`}
+                        className="hover:text-accent transition-colors"
+                      >
                         {post.title}
                       </Link>
                     </h3>
-                    <p className="text-muted-foreground text-sm line-clamp-2">
+                    <p className="text-muted-foreground text-sm line-clamp-2 leading-relaxed">
                       {toPlainTextExcerpt(post.content, 160)}
                     </p>
                   </article>
                 ))}
               </div>
             )}
-          </div>
+          </section>
 
-          {/* User Comments */}
-          <div className="space-y-6">
-            <h2 className="text-2xl font-display font-bold tracking-tight">Son Yorumları</h2>
+          {/* Yorumlar */}
+          <section className="space-y-6">
+            <div className="space-y-2 border-b-2 border-foreground/80 pb-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold">
+                Etkileşim
+              </p>
+              <h2 className="text-2xl font-display font-bold tracking-tight">Son Yorumları</h2>
+            </div>
             {comments.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Bu kullanıcı henüz yorum yapmamış.</p>
+              <p className="text-muted-foreground text-sm border border-dashed border-border-strong rounded-md p-6">
+                Bu kullanıcı henüz yorum yapmamış.
+              </p>
             ) : (
               <ul className="space-y-3">
                 {comments.slice(0, 5).map((comment) => (
-                  <li key={comment._id.toString()} className="p-5 bg-surface rounded-xl border border-border space-y-1">
-                    <p className="text-muted-foreground text-sm line-clamp-2">{comment.content}</p>
+                  <li
+                    key={comment._id.toString()}
+                    className="p-5 bg-surface rounded-md border border-border border-l-2 border-l-gold space-y-1"
+                  >
+                    <p className="text-muted-foreground text-sm line-clamp-2 leading-relaxed">{comment.content}</p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(comment.date).toLocaleDateString("tr-TR")} •{" "}
                       <Link
                         href={`/blog/${comment.post_id.toString()}#comments`}
-                        className="font-semibold text-accent hover:underline"
+                        className="font-semibold text-accent underline-offset-4 decoration-gold/60 hover:decoration-accent"
                       >
                         Yazıya git →
                       </Link>
@@ -188,7 +209,7 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
                 ))}
               </ul>
             )}
-          </div>
+          </section>
         </div>
       </Container>
     </div>

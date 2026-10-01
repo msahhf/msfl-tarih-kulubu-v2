@@ -51,6 +51,13 @@ export async function getDb(): Promise<Db> {
 let indexesEnsured = false;
 
 /**
+ * Backup retention: hesap silinirken alınan arşiv kopyaları 30 gün (1 ay)
+ * tutulur. Süre, MongoDB TTL index'i üzerinden otomatik uygulanır:
+ * deletedAt alanından 30 gün geçen kayıtlar MongoDB tarafından silinir.
+ */
+const BACKUP_RETENTION_SECONDS = 30 * 24 * 60 * 60;
+
+/**
  * Idempotent index setup (native driver has no schema-level
  * unique constraints like legacy Mongoose). Safe to call per request;
  * runs only once per instance.
@@ -66,6 +73,11 @@ async function ensureIndexes(db: Db): Promise<void> {
       db.collection("posts").createIndex({ user_id: 1 }),
       db.collection("comments").createIndex({ post_id: 1 }),
       db.collection("comments").createIndex({ user_id: 1 }),
+      // Backup retention (1 ay): deletedAt + 30 gün sonrası otomatik silme.
+      db.collection("backups").createIndex(
+        { deletedAt: 1 },
+        { expireAfterSeconds: BACKUP_RETENTION_SECONDS }
+      ),
     ]);
     indexesEnsured = true;
   } catch (error) {

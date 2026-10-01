@@ -1,6 +1,6 @@
 import { Db } from "mongodb";
 import { getDb } from "../mongodb";
-import { toObjectId } from "../object-id";
+import { toObjectId, idMatchValues } from "../object-id";
 import type {
   Post,
   CreatePostInput,
@@ -26,6 +26,19 @@ export async function findRecent(limit: number = 10): Promise<Post[]> {
     .toArray() as unknown as Promise<Post[]>;
 }
 
+/**
+ * Arşiv listesi için tüm yazılar, en yeni önce.
+ * Sayfalama/limit yoktur; filtresiz tüm yayınlanmış yazıları döner.
+ */
+export async function findAll(): Promise<Post[]> {
+  const db = await getDb();
+  const collection = db.collection(COLLECTION_NAME);
+  return collection
+    .find()
+    .sort({ date: -1 })
+    .toArray() as unknown as Promise<Post[]>;
+}
+
 export async function findPaginated(
   page: number = 1,
   pageSize: number = 10
@@ -47,11 +60,15 @@ export async function findPaginated(
   return { posts, total, pages };
 }
 
+/**
+ * Kullanıcının yazıları. Legacy kayıtlarda user_id ObjectId olarak
+ * saklanır (Mongoose ref), yeni kayıtlarda string'tir; ikisi de eşleşir.
+ */
 export async function findByUserId(userId: string): Promise<Post[]> {
   const db = await getDb();
   const collection = db.collection(COLLECTION_NAME);
   return collection
-    .find({ user_id: userId })
+    .find({ user_id: { $in: idMatchValues(userId) } })
     .sort({ date: -1 })
     .toArray() as unknown as Promise<Post[]>;
 }
@@ -109,7 +126,7 @@ export async function updateUsernameByUserId(
   const db = await getDb();
   const collection = db.collection(COLLECTION_NAME);
   const result = await collection.updateMany(
-    { user_id: userId },
+    { user_id: { $in: idMatchValues(userId) } },
     { $set: { username } }
   );
   return result.modifiedCount;
@@ -118,7 +135,7 @@ export async function updateUsernameByUserId(
 export async function deletePostsByUserId(userId: string): Promise<number> {
   const db = await getDb();
   const collection = db.collection(COLLECTION_NAME);
-  const result = await collection.deleteMany({ user_id: userId });
+  const result = await collection.deleteMany({ user_id: { $in: idMatchValues(userId) } });
   return result.deletedCount;
 }
 

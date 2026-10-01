@@ -1,8 +1,13 @@
 import { Container } from "@/components/ui/Container";
-import { SectionHeader } from "@/components/ui/SectionHeader";
+import { PageHero } from "@/components/ui/PageHero";
 import { tarihteBugunRepository } from "@/lib/db/repositories";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Tarihte Bugün",
+  description: "MSFL Tarih Kulübü arşivinden bugünün tarihinde yaşanmış önemli olaylar.",
+};
 
 export default async function TarihteBugunPage() {
   const now = new Date();
@@ -13,6 +18,7 @@ export default async function TarihteBugunPage() {
   const formattedDate = now.toLocaleDateString("tr-TR", {
     day: "numeric",
     month: "long",
+    year: "numeric",
   });
 
   let entry = null;
@@ -23,50 +29,58 @@ export default async function TarihteBugunPage() {
   }
 
   return (
-    <div className="space-y-16 py-16">
-      <Container>
-        <div className="max-w-4xl mx-auto space-y-12">
-          <SectionHeader
-            title="Geçmişin Sayfalarında Bugün"
-            description="Tarih arşivimizden seçilmiş önemli olaylar ve dönem dönüm noktaları."
-            className="text-center"
-          />
+    <div>
+      <PageHero
+        eyebrow="Arşiv"
+        title="Tarihte Bugün"
+        description="Bugün geçmişte neler yaşandı, bir bak."
+        image="/img/bg/tarihte-bugun.webp"
+      />
 
-          <div className="p-8 bg-surface rounded-xl border border-border space-y-8 shadow-sm">
-            <div className="flex items-center gap-4 border-b border-border pb-6">
-              <div className="px-4 py-2 bg-accent text-accent-foreground font-display font-bold rounded-lg text-lg">
-                {formattedDate}
-              </div>
-              <span className="text-muted-foreground text-sm uppercase tracking-widest font-semibold">
-                Tarihte Bu Gün Yaşananlar
-              </span>
+      <Container className="py-16">
+        <div className="mx-auto max-w-4xl space-y-10">
+          {/* Tarih plakası */}
+          <div className="flex items-center gap-4 border-b-2 border-foreground/80 pb-6">
+            <div className="bg-accent text-accent-foreground font-display font-bold rounded-sm px-5 py-3 text-lg leading-none">
+              {formattedDate}
             </div>
-
-            {!entry || !entry.events || entry.events.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground space-y-3">
-                <p className="text-lg font-medium">Bu tarih için henüz arşiv içeriği oluşturulmadı.</p>
-                <p className="text-sm">Günlük arşiv içerikleri otomatik olarak güncellenmektedir. Lütfen daha sonra tekrar ziyaret edin.</p>
-              </div>
-            ) : (
-              <div className="space-y-8">
-                {entry.events.map((item, index) => (
-                  <div key={index} className="flex gap-6 items-start pb-6 border-b border-border last:border-b-0 last:pb-0">
-                    <span className="font-display font-bold text-2xl text-accent min-w-[80px]">
-                      {item.year}
-                    </span>
-                    <div className="space-y-2 pt-1">
-                      <h3 className="font-display font-bold text-xl text-foreground">
-                        {item.title}
-                      </h3>
-                      <p className="text-muted-foreground text-base leading-relaxed">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
+              Tarihte Bu Gün Yaşananlar
+            </span>
           </div>
+
+          {!entry || !entry.events || entry.events.length === 0 ? (
+            <div className="paper-panel p-10 text-center space-y-3">
+              <p className="font-display text-lg font-medium text-foreground">
+                Bu tarih için henüz arşiv içeriği oluşturulmadı.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Günlük arşiv içerikleri otomatik olarak güncellenmektedir. Lütfen
+                daha sonra tekrar ziyaret edin.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {entry.events.map((item, index) => (
+                <article
+                  key={index}
+                  className="bg-surface p-6 sm:p-8 rounded-md border border-border border-l-4 border-l-accent flex flex-col gap-4 sm:flex-row sm:gap-8"
+                >
+                  <span className="font-display text-3xl font-bold text-accent sm:min-w-[110px]">
+                    {item.year}
+                  </span>
+                  <div className="space-y-2">
+                    <h2 className="font-display text-xl font-bold text-foreground">
+                      {item.title}
+                    </h2>
+                    <p className="text-foreground/80 leading-relaxed">
+                      {item.description}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </Container>
     </div>
