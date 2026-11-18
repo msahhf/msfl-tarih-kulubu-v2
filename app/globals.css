@@ -818,10 +818,6 @@
       margin-top: 0.15rem;
     }
 
-    .magazine-reader__hint-sep {
-      display: none;
-    }
-
     .magazine-thumbs {
       padding: 0;
     }
@@ -841,52 +837,12 @@
       right: 0.5rem;
       bottom: 4rem;
     }
-
-    .magazine-notes {
-      padding: 0;
-      align-items: stretch;
-    }
-
-    .magazine-notes__panel {
-      max-width: none;
-      max-height: 100%;
-      border-left: 0;
-      border-right: 0;
-      border-bottom: 0;
-    }
   }
 
   /* =============================================================
      Okuyucu notları
      Dergi sayfalarına iğne bırakılan, anonim yayımlanan notlar.
      ============================================================= */
-
-  .magazine-reader__hint-sep {
-    color: var(--color-border-strong);
-  }
-
-  .magazine-reader__hint-button {
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--color-accent);
-    font: inherit;
-    font-weight: 600;
-    text-align: left;
-    text-decoration: underline;
-    text-decoration-color: var(--color-gold-bright);
-    text-underline-offset: 3px;
-    cursor: pointer;
-  }
-
-  .magazine-reader__hint-button:hover:not(:disabled) {
-    text-decoration-color: var(--color-accent);
-  }
-
-  .magazine-reader__hint-button:disabled {
-    color: var(--color-muted-foreground);
-    cursor: not-allowed;
-  }
 
   .magazine-note-count {
     display: inline-flex;
@@ -912,40 +868,6 @@
     pointer-events: none;
   }
 
-  .magazine-note-marker {
-    position: absolute;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.55rem;
-    height: 1.55rem;
-    transform: translate(-50%, -50%);
-    border: 1px solid rgb(253 250 243 / 0.85);
-    border-radius: 999px;
-    background: rgb(115 25 25 / 0.92);
-    color: #fdfaf3;
-    box-shadow: 0 1px 5px rgb(0 0 0 / 0.45);
-    pointer-events: auto;
-    cursor: pointer;
-    transition:
-      background-color 0.15s ease,
-      transform 0.15s ease;
-  }
-
-  .magazine-note-marker::after {
-    content: "";
-    position: absolute;
-    inset: -0.3rem;
-    border: 1px solid rgb(115 25 25 / 0.35);
-    border-radius: 999px;
-  }
-
-  .magazine-note-marker:hover,
-  .magazine-note-marker.is-active {
-    transform: translate(-50%, -50%) scale(1.12);
-    background: var(--color-accent-strong);
-  }
-
   .magazine-note-badge {
     position: absolute;
     right: 0.55rem;
@@ -968,58 +890,6 @@
 
   .magazine-note-badge:hover {
     background: var(--color-ink);
-  }
-
-  /* Nokta işaretleme */
-
-  .magazine-reader__canvas[data-marking="true"] .stf__parent {
-    pointer-events: none;
-  }
-
-  .magazine-marking-surface {
-    position: absolute;
-    z-index: 6;
-    border: 1px dashed rgb(201 167 82 / 0.85);
-    background: rgb(201 167 82 / 0.08);
-    cursor: crosshair;
-    touch-action: manipulation;
-  }
-
-  .magazine-marking-hint {
-    position: absolute;
-    bottom: 1rem;
-    left: 50%;
-    z-index: 7;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    max-width: calc(100% - 2rem);
-    padding: 0.5rem 0.75rem;
-    transform: translateX(-50%);
-    border: 1px solid rgb(201 167 82 / 0.4);
-    background: rgb(23 17 13 / 0.92);
-    color: var(--color-accent-foreground);
-    font-size: 0.72rem;
-    line-height: 1.4;
-  }
-
-  .magazine-marking-hint svg {
-    flex-shrink: 0;
-    color: var(--color-gold-bright);
-  }
-
-  .magazine-marking-hint__cancel {
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--color-gold-bright);
-    font: inherit;
-    font-weight: 700;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    white-space: nowrap;
-    cursor: pointer;
   }
 
   /* Not paneli */
@@ -1152,18 +1022,6 @@
     text-transform: uppercase;
   }
 
-  .magazine-note-item__tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.2rem;
-    margin-left: auto;
-    color: var(--color-gold);
-    font-size: 0.56rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
   .magazine-note-item__body {
     color: var(--color-foreground);
     font-size: 0.85rem;
@@ -1247,26 +1105,6 @@
     gap: 0.5rem;
   }
 
-  .magazine-notes__marker {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    padding: 0.25rem;
-    border: 0;
-    background: none;
-    color: var(--color-gold);
-    font-size: 0.72rem;
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    cursor: pointer;
-  }
-
-  .magazine-notes__marker:hover {
-    color: var(--color-accent);
-  }
-
   .magazine-note-button {
     display: inline-flex;
     align-items: center;
@@ -1310,6 +1148,24 @@
   .magazine-note-button:disabled {
     cursor: not-allowed;
     opacity: 0.55;
+  }
+
+  /* Mobil: panel tam yükseklikte alt sayfa olarak açılır. Bu blok not
+     kurallarından sonra gelmeli; aksi halde temel `max-height` kazanır. */
+  @media (max-width: 639px) {
+    .magazine-notes {
+      align-items: stretch;
+      padding: 0;
+    }
+
+    .magazine-notes__panel {
+      max-width: none;
+      max-height: none;
+      height: 100%;
+      border-right: 0;
+      border-bottom: 0;
+      border-left: 0;
+    }
   }
 
   @media (min-width: 900px) {

@@ -1,15 +1,11 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import type {
-  MagazineNoteAnchor,
-  PublicMagazineNote,
-} from "@/types/magazine-note";
-import { CloseIcon, MarkerIcon, NoteIcon, PinIcon } from "./icons";
+import type { PublicMagazineNote } from "@/types/magazine-note";
+import { CloseIcon, NoteIcon } from "./icons";
 
 export type MagazineNoteComposerTarget = {
   page: number;
-  anchor: MagazineNoteAnchor | null;
 };
 
 export type MagazineNoteSubmitResult = {
@@ -51,8 +47,6 @@ type MagazineNotesPanelProps = {
   onJumpToPage: (page: number) => void;
   onStartCompose: (target: MagazineNoteComposerTarget) => void;
   onCancelCompose: () => void;
-  /** Sayfada bir nokta seçme moduna geçer. */
-  onStartMarking: () => void;
   onSubmit: (input: {
     body: string;
     name: string;
@@ -71,7 +65,6 @@ export function MagazineNotesPanel({
   onJumpToPage,
   onStartCompose,
   onCancelCompose,
-  onStartMarking,
   onSubmit,
 }: MagazineNotesPanelProps) {
   const titleId = useId();
@@ -182,21 +175,13 @@ export function MagazineNotesPanel({
         <div className="magazine-notes__header">
           <div className="min-w-0">
             <p className="magazine-notes__eyebrow">
-              {composer
-                ? `Sayfa ${composer.page} · ${
-                    composer.anchor ? "işaretli alan" : "sayfa notu"
-                  }`
-                : "Okuyucu notları"}
+              {composer ? `Sayfa ${composer.page}` : "Okuyucu notları"}
             </p>
             <h2
               id={titleId}
               className="truncate font-display text-xl font-bold text-foreground"
             >
-              {composer
-                ? composer.anchor
-                  ? "İşaretli alana not"
-                  : "Sayfaya not"
-                : `Notlar (${notes.length})`}
+              {composer ? "Sayfaya not" : `Notlar (${notes.length})`}
             </h2>
           </div>
           <button
@@ -240,11 +225,7 @@ export function MagazineNotesPanel({
                   setSaved(false);
                 }}
                 className="field-input resize-y"
-                placeholder={
-                  composer.anchor
-                    ? "Bu noktayla ilgili düşüncenizi yazın…"
-                    : "Bu sayfa hakkındaki düşüncenizi yazın…"
-                }
+                placeholder="Bu sayfa hakkındaki düşüncenizi yazın…"
                 aria-invalid={fieldErrors.body ? true : undefined}
                 aria-describedby={
                   fieldErrors.body ? "magazine-note-body-error" : undefined
@@ -320,8 +301,7 @@ export function MagazineNotesPanel({
 
             <p id="magazine-note-email-help" className="magazine-notes__help">
               E-posta adresiniz{" "}
-              <strong className="text-foreground">yayımlanmaz</strong>. Yalnızca
-              güvenlik (spam ve kötüye kullanım) için alınır.
+              <strong className="text-foreground">yayımlanmaz</strong>.
               {name.trim().length === 0 &&
                 " İsim girmezseniz notunuz “Anonim” olarak görünür."}
             </p>
@@ -359,17 +339,6 @@ export function MagazineNotesPanel({
                 </button>
               )}
             </div>
-
-            <button
-              type="button"
-              className="magazine-notes__marker"
-              onClick={onStartMarking}
-            >
-              <MarkerIcon className="h-4 w-4" />
-              {composer.anchor
-                ? "Sayfada başka bir noktayı işaretle"
-                : "Sayfada bir noktayı işaretle"}
-            </button>
           </form>
         ) : (
           <>
@@ -383,8 +352,8 @@ export function MagazineNotesPanel({
                     Henüz not yok
                   </p>
                   <p className="max-w-[22rem] text-sm leading-relaxed text-muted-foreground">
-                    İlk notu siz bırakın. Sayfada bir noktayı işaretleyebilir ya
-                    da sayfanın tamamına yorum yazabilirsiniz.
+                    İlk notu siz bırakın. Sayfa hakkındaki düşüncenizi
+                    yazabilirsiniz.
                   </p>
                 </div>
               ) : (
@@ -418,16 +387,6 @@ export function MagazineNotesPanel({
                               </span>
                               <span aria-hidden="true">·</span>
                               <span>{formatDate(note.createdAt)}</span>
-                              <span className="magazine-note-item__tag">
-                                {note.anchor ? (
-                                  <>
-                                    <PinIcon className="h-3 w-3" />
-                                    İşaretli alan
-                                  </>
-                                ) : (
-                                  "Sayfa notu"
-                                )}
-                              </span>
                             </div>
                             <p className="magazine-note-item__body whitespace-pre-line">
                               {note.body}
@@ -453,24 +412,14 @@ export function MagazineNotesPanel({
                 Notlar anonim yayımlanır. İsim yazarsanız yalnızca o görünür;
                 e-posta adresiniz hiçbir zaman gösterilmez.
               </p>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  className="magazine-note-button magazine-note-button--ghost"
-                  onClick={onStartMarking}
-                >
-                  <MarkerIcon className="h-4 w-4" />
-                  Nokta işaretle
-                </button>
-                <button
-                  type="button"
-                  className="magazine-note-button magazine-note-button--solid flex-1"
-                  onClick={() => onStartCompose({ page: currentPage, anchor: null })}
-                >
-                  <NoteIcon className="h-4 w-4" />
-                  Bu sayfaya not bırak
-                </button>
-              </div>
+              <button
+                type="button"
+                className="magazine-note-button magazine-note-button--solid w-full"
+                onClick={() => onStartCompose({ page: currentPage })}
+              >
+                <NoteIcon className="h-4 w-4" />
+                Bu sayfaya not bırak
+              </button>
             </div>
           </>
         )}

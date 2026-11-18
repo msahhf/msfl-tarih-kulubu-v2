@@ -121,22 +121,3 @@ export function NoteIcon(props: IconProps) {
     </Icon>
   );
 }
-
-export function PinIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <path d="M12 21s-6-5.4-6-10a6 6 0 0 1 12 0c0 4.6-6 10-6 10Z" />
-      <circle cx="12" cy="11" r="2.2" />
-    </Icon>
-  );
-}
-
-export function MarkerIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
-      <circle cx="12" cy="12" r="4.5" />
-      <circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none" />
-    </Icon>
-  );
-}
