@@ -73,6 +73,17 @@ async function ensureIndexes(db: Db): Promise<void> {
       db.collection("posts").createIndex({ user_id: 1 }),
       db.collection("comments").createIndex({ post_id: 1 }),
       db.collection("comments").createIndex({ user_id: 1 }),
+      // Dergi okuyucu notları: sayıya ve sayfaya göre listeleme.
+      db.collection("magazine_notes").createIndex({
+        issueSlug: 1,
+        page: 1,
+        createdAt: 1,
+      }),
+      // Aynı e-posta ile gönderim sıklığını denetlemek için.
+      db.collection("magazine_notes").createIndex({
+        email: 1,
+        createdAt: -1,
+      }),
       // Backup retention (1 ay): deletedAt + 30 gün sonrası otomatik silme.
       db.collection("backups").createIndex(
         { deletedAt: 1 },

@@ -273,10 +273,25 @@
     position: relative;
     flex: 0 0 auto;
     margin: 0 auto;
+    transition: transform 0.32s ease;
   }
 
   .magazine-reader__book > .stf__parent {
     margin: 0 auto;
+  }
+
+  /* Kapak tek sayfa: sağ yuvaya düşen kapağı görsel olarak ortala.
+     Dönüşüm kitap sarmalayıcısına uygulanır; PageFlip'in kendi
+     `transform: translateZ(0)` kuralı katmansız olduğu için .stf__parent
+     üzerindeki bir dönüşüm ezilirdi. */
+  .magazine-reader__book[data-cover="true"] {
+    transform: translateX(-25%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .magazine-reader__book {
+      transition: none;
+    }
   }
 
   .magazine-reader__book .stf__wrapper {
@@ -576,6 +591,7 @@
 
   .magazine-reader__hint {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
@@ -591,6 +607,13 @@
   .magazine-reader__hint svg {
     flex-shrink: 0;
     color: var(--color-gold);
+  }
+
+  .magazine-reader__hint-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
   }
 
   /* Tam ekran / odak modu */
@@ -784,6 +807,21 @@
       font-size: 0.62rem;
     }
 
+    /* Mobilde iki ipucu alt alta, tam genişlikte okunur. */
+    .magazine-reader__hint-item {
+      flex: 1 1 100%;
+      align-items: flex-start;
+      text-align: left;
+    }
+
+    .magazine-reader__hint-item svg {
+      margin-top: 0.15rem;
+    }
+
+    .magazine-reader__hint-sep {
+      display: none;
+    }
+
     .magazine-thumbs {
       padding: 0;
     }
@@ -802,6 +840,492 @@
     .magazine-immersive-close {
       right: 0.5rem;
       bottom: 4rem;
+    }
+
+    .magazine-notes {
+      padding: 0;
+      align-items: stretch;
+    }
+
+    .magazine-notes__panel {
+      max-width: none;
+      max-height: 100%;
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+    }
+  }
+
+  /* =============================================================
+     Okuyucu notları
+     Dergi sayfalarına iğne bırakılan, anonim yayımlanan notlar.
+     ============================================================= */
+
+  .magazine-reader__hint-sep {
+    color: var(--color-border-strong);
+  }
+
+  .magazine-reader__hint-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-accent);
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: var(--color-gold-bright);
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .magazine-reader__hint-button:hover:not(:disabled) {
+    text-decoration-color: var(--color-accent);
+  }
+
+  .magazine-reader__hint-button:disabled {
+    color: var(--color-muted-foreground);
+    cursor: not-allowed;
+  }
+
+  .magazine-note-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    padding: 0 0.25rem;
+    border-radius: 999px;
+    background: var(--color-accent);
+    color: var(--color-accent-foreground);
+    font-size: 0.56rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Sayfa üzerindeki iğneler */
+
+  .magazine-note-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  .magazine-note-marker {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.55rem;
+    height: 1.55rem;
+    transform: translate(-50%, -50%);
+    border: 1px solid rgb(253 250 243 / 0.85);
+    border-radius: 999px;
+    background: rgb(115 25 25 / 0.92);
+    color: #fdfaf3;
+    box-shadow: 0 1px 5px rgb(0 0 0 / 0.45);
+    pointer-events: auto;
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .magazine-note-marker::after {
+    content: "";
+    position: absolute;
+    inset: -0.3rem;
+    border: 1px solid rgb(115 25 25 / 0.35);
+    border-radius: 999px;
+  }
+
+  .magazine-note-marker:hover,
+  .magazine-note-marker.is-active {
+    transform: translate(-50%, -50%) scale(1.12);
+    background: var(--color-accent-strong);
+  }
+
+  .magazine-note-badge {
+    position: absolute;
+    right: 0.55rem;
+    bottom: 0.55rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.18rem 0.45rem;
+    border: 1px solid rgb(249 244 232 / 0.4);
+    border-radius: 999px;
+    background: rgb(26 26 46 / 0.82);
+    color: #f9f4e8;
+    font-size: 0.62rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .magazine-note-badge:hover {
+    background: var(--color-ink);
+  }
+
+  /* Nokta işaretleme */
+
+  .magazine-reader__canvas[data-marking="true"] .stf__parent {
+    pointer-events: none;
+  }
+
+  .magazine-marking-surface {
+    position: absolute;
+    z-index: 6;
+    border: 1px dashed rgb(201 167 82 / 0.85);
+    background: rgb(201 167 82 / 0.08);
+    cursor: crosshair;
+    touch-action: manipulation;
+  }
+
+  .magazine-marking-hint {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    z-index: 7;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: calc(100% - 2rem);
+    padding: 0.5rem 0.75rem;
+    transform: translateX(-50%);
+    border: 1px solid rgb(201 167 82 / 0.4);
+    background: rgb(23 17 13 / 0.92);
+    color: var(--color-accent-foreground);
+    font-size: 0.72rem;
+    line-height: 1.4;
+  }
+
+  .magazine-marking-hint svg {
+    flex-shrink: 0;
+    color: var(--color-gold-bright);
+  }
+
+  .magazine-marking-hint__cancel {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-gold-bright);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  /* Not paneli */
+
+  .magazine-notes {
+    position: fixed;
+    inset: 0;
+    z-index: 95;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: clamp(0.5rem, 2vw, 1.5rem);
+    background: rgb(20 15 11 / 0.66);
+    backdrop-filter: blur(5px);
+    animation: magazine-fade-in 0.18s ease-out;
+  }
+
+  .magazine-notes__panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 30rem;
+    max-height: min(90vh, 48rem);
+    border: 1px solid var(--color-border-strong);
+    border-top: 3px double var(--color-accent);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-lg);
+    animation: magazine-notes-in 0.22s ease-out;
+  }
+
+  .magazine-notes__header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .magazine-notes__eyebrow {
+    margin-bottom: 0.15rem;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+  }
+
+  .magazine-notes__form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    overflow-y: auto;
+  }
+
+  .magazine-notes__list {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 1rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: rgb(138 109 47 / 0.4) transparent;
+    scrollbar-width: thin;
+  }
+
+  .magazine-notes__group + .magazine-notes__group {
+    margin-top: 1.35rem;
+  }
+
+  .magazine-notes__group-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    margin-bottom: 0.7rem;
+    padding: 0 0 0.35rem;
+    border: 0;
+    border-bottom: 1px solid var(--color-border-strong);
+    background: none;
+    color: var(--color-accent);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .magazine-notes__group-title:hover {
+    color: var(--color-accent-strong);
+  }
+
+  .magazine-notes__group-count {
+    padding: 0 0.4rem;
+    border: 1px solid var(--color-gold);
+    color: var(--color-gold);
+    font-size: 0.6rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .magazine-note-item {
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--color-border);
+    border-left: 2px solid var(--color-border-strong);
+    background: var(--color-background);
+  }
+
+  .magazine-note-item.is-active {
+    border-left-color: var(--color-accent);
+    background: rgb(201 167 82 / 0.08);
+  }
+
+  .magazine-note-item__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 0.3rem;
+    color: var(--color-muted-foreground);
+    font-size: 0.64rem;
+  }
+
+  .magazine-note-item__author {
+    color: var(--color-foreground);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .magazine-note-item__tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    margin-left: auto;
+    color: var(--color-gold);
+    font-size: 0.56rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .magazine-note-item__body {
+    color: var(--color-foreground);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+
+  .magazine-note-item__jump {
+    margin-top: 0.4rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--color-accent);
+    font-size: 0.66rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .magazine-notes__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 2.5rem 1rem;
+    text-align: center;
+  }
+
+  .magazine-notes__empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 999px;
+    color: var(--color-gold);
+  }
+
+  .magazine-notes__footer {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.9rem 1rem;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-background);
+  }
+
+  .magazine-notes__help {
+    padding: 0.55rem 0.7rem;
+    border-left: 2px solid rgb(138 109 47 / 0.6);
+    background: rgb(201 167 82 / 0.08);
+    color: var(--color-muted-foreground);
+    font-size: 0.72rem;
+    line-height: 1.55;
+  }
+
+  .magazine-notes__alert {
+    padding: 0.5rem 0.7rem;
+    border-left: 2px solid var(--color-destructive);
+    background: rgb(160 49 49 / 0.08);
+    color: var(--color-destructive);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .magazine-notes__success {
+    padding: 0.5rem 0.7rem;
+    border-left: 2px solid var(--color-success);
+    background: rgb(46 107 69 / 0.08);
+    color: var(--color-success);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .magazine-notes__actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .magazine-notes__marker {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.25rem;
+    border: 0;
+    background: none;
+    color: var(--color-gold);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .magazine-notes__marker:hover {
+    color: var(--color-accent);
+  }
+
+  .magazine-note-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.55rem 0.9rem;
+    border: 1px solid var(--color-border-strong);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      color 0.15s ease,
+      border-color 0.15s ease,
+      background-color 0.15s ease;
+  }
+
+  .magazine-note-button--solid {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-accent-foreground);
+  }
+
+  .magazine-note-button--solid:hover:not(:disabled) {
+    border-color: var(--color-accent-strong);
+    background: var(--color-accent-strong);
+  }
+
+  .magazine-note-button--ghost {
+    background: transparent;
+    color: var(--color-foreground);
+  }
+
+  .magazine-note-button--ghost:hover:not(:disabled) {
+    border-color: var(--color-gold);
+    background: rgb(201 167 82 / 0.12);
+    color: var(--color-accent);
+  }
+
+  .magazine-note-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  @media (min-width: 900px) {
+    .magazine-notes {
+      align-items: stretch;
+      justify-content: flex-end;
+      padding: 0;
+    }
+
+    .magazine-notes__panel {
+      height: 100%;
+      max-height: none;
+      max-width: 29rem;
+      border-top: 0;
+      border-right: 0;
+      border-bottom: 0;
     }
   }
 
@@ -839,6 +1363,17 @@
     }
     to {
       opacity: 1;
+    }
+  }
+
+  @keyframes magazine-notes-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 }

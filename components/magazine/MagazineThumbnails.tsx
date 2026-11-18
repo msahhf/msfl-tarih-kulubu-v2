@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { PageFlipOrientation } from "page-flip";
 import { CloseIcon } from "./icons";
 
 type ThumbnailProps = {
@@ -98,8 +97,8 @@ type MagazineThumbnailsProps = {
   open: boolean;
   pageCount: number;
   ratio: number;
-  currentPage: number;
-  orientation: PageFlipOrientation;
+  /** O an ekranda görünen sayfa indeksleri (0 tabanlı). */
+  activePages: number[];
   onSelect: (page: number) => void;
   onClose: () => void;
   renderThumbnail: (pageIndex: number) => Promise<string>;
@@ -109,8 +108,7 @@ export function MagazineThumbnails({
   open,
   pageCount,
   ratio,
-  currentPage,
-  orientation,
+  activePages,
   onSelect,
   onClose,
   renderThumbnail,
@@ -123,13 +121,7 @@ export function MagazineThumbnails({
 
   if (!open) return null;
 
-  const activePages = new Set<number>();
-  if (orientation === "portrait") {
-    activePages.add(currentPage);
-  } else {
-    activePages.add(currentPage);
-    if (currentPage + 1 < pageCount) activePages.add(currentPage + 1);
-  }
+  const active = new Set<number>(activePages);
 
   return (
     <div
@@ -165,7 +157,7 @@ export function MagazineThumbnails({
               key={index}
               index={index}
               ratio={ratio}
-              active={activePages.has(index)}
+              active={active.has(index)}
               renderThumbnail={renderThumbnail}
               onSelect={onSelect}
             />

@@ -1,10 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import type { PageFlip, PageFlipOrientation } from "page-flip";
 import type { MagazineIssue } from "@/content/magazine";
+import type { PublicMagazineNote } from "@/types/magazine-note";
+import {
+  formatSpreadLabel,
+  getNextSpreadStart,
+  getPrevSpreadStart,
+  getSpreadPages,
+  getSpreadStart,
+  type SpreadLayout,
+} from "@/lib/magazine/spreads";
 import { usePdfDocument } from "./usePdfDocument";
+import { useMagazineNotes } from "./useMagazineNotes";
 import { MagazineThumbnails } from "./MagazineThumbnails";
+import {
+  MagazineNotesPanel,
+  type MagazineNoteComposerTarget,
+  type MagazineNoteSubmitResult,
+} from "./MagazineNotesPanel";
 import {
   AlertIcon,
   BookIcon,
@@ -14,7 +30,10 @@ import {
   ContractIcon,
   ExpandIcon,
   FitIcon,
+  MarkerIcon,
+  NoteIcon,
   PagesIcon,
+  PinIcon,
   ZoomInIcon,
   ZoomOutIcon,
 } from "./icons";
@@ -36,6 +55,9 @@ const MIN_ZOOM = 1;
 const MAX_ZOOM = 2;
 const ZOOM_STEP = 0.25;
 const MAX_CACHED_PAGES = 14;
+
+/** Kitap düzeninde kapak tek başına gösterilir, sonra çiftler gelir. */
+const SHOW_COVER = true;
 
 function scheduleIdle(task: () => void) {
   if (typeof window === "undefined") return;
@@ -152,6 +174,85 @@ function ReaderError({
   );
 }
 
+type PageNoteOverlayProps = {
+  page: number;
+  notes: PublicMagazineNote[];
+  activeNoteId: string | null;
+  hoveredNoteId: string | null;
+  onHover: (id: string | null) => void;
+  onSelect: (note: PublicMagazineNote) => void;
+};
+
+/**
+ * Bir sayfanın üzerine düşen not iğneleri ve sayfa notu rozeti.
+ *
+ * Sayfa çerçevesinin içine portal ile çizilir; böylece sayfa çevrilirken,
+ * yakınlaştırılırken veya yeniden boyutlanırken iğneler sayfayla birlikte
+ * hareket eder (ekran koordinatı hesaplamak gerekmez).
+ */
+function PageNoteOverlay({
+  page,
+  notes,
+  activeNoteId,
+  hoveredNoteId,
+  onHover,
+  onSelect,
+}: PageNoteOverlayProps) {
+  const anchored = notes.filter((note) => note.anchor);
+  const pageNotes = notes.filter((note) => !note.anchor);
+
+  if (!anchored.length && !pageNotes.length) return null;
+
+  return (
+    <div className="magazine-note-layer">
+      {anchored.map((note, position) => (
+        <button
+          key={note.id}
+          type="button"
+          className={`magazine-note-marker ${
+            note.id === activeNoteId || note.id === hoveredNoteId
+              ? "is-active"
+              : ""
+          }`}
+          style={{
+            left: `${(note.anchor?.x ?? 0) * 100}%`,
+            top: `${(note.anchor?.y ?? 0) * 100}%`,
+          }}
+          onClick={(event) => {
+            event.stopPropagation();
+            onSelect(note);
+          }}
+          onMouseEnter={() => onHover(note.id)}
+          onMouseLeave={() => onHover(null)}
+          onFocus={() => onHover(note.id)}
+          onBlur={() => onHover(null)}
+          title={`${note.name ?? "Anonim"}: ${note.body.slice(0, 120)}`}
+          aria-label={`Sayfa ${page} üzerindeki not ${position + 1}: ${
+            note.name ?? "Anonim"
+          }`}
+        >
+          <PinIcon className="h-3.5 w-3.5" />
+        </button>
+      ))}
+
+      {pageNotes.length > 0 && (
+        <button
+          type="button"
+          className="magazine-note-badge"
+          onClick={(event) => {
+            event.stopPropagation();
+            onSelect(pageNotes[0]);
+          }}
+          title={`Bu sayfada ${pageNotes.length} not var`}
+        >
+          <NoteIcon className="h-3.5 w-3.5" />
+          {pageNotes.length}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function MagazineReader({ issue }: { issue: MagazineIssue }) {
   const {
     status,
@@ -177,10 +278,38 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [cssFullscreen, setCssFullscreen] = useState(false);
 
+  // Okuyucu notları
+  const { notes, submitNote } = useMagazineNotes(issue.slug);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [composer, setComposer] = useState<MagazineNoteComposerTarget | null>(
+    null
+  );
+  const [marking, setMarking] = useState(false);
+  const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
+  const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
+  const [pageFrames, setPageFrames] = useState<HTMLDivElement[]>([]);
+  const [markSurface, setMarkSurface] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null>(null);
+
+  // Portallar yalnızca istemcide çizilir; SSR ile hydration uyuşmazlığı olmaz.
+  const portalReady = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  );
+
   const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const flipRef = useRef<PageFlip | null>(null);
+  const overlayLayerRef = useRef<HTMLDivElement>(null);
+  const markerLayerRef = useRef<HTMLDivElement>(null);
+  const overlaySyncRef = useRef<() => void>(() => undefined);
+  const markingRef = useRef(false);
 
   const pageElsRef = useRef<HTMLDivElement[]>([]);
   const imgElsRef = useRef<HTMLImageElement[]>([]);
@@ -214,6 +343,10 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
   useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
+
+  useEffect(() => {
+    markingRef.current = marking;
+  }, [marking]);
 
   useEffect(() => {
     orientationRef.current = orientation;
@@ -415,18 +548,23 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
     }
   }, [flushGarbage]);
 
+  const getLayout = useCallback(
+    (): SpreadLayout => ({
+      portrait: orientationRef.current === "portrait",
+      showCover: SHOW_COVER,
+    }),
+    []
+  );
+
   const syncWindow = useCallback(
     (center = currentPageRef.current) => {
       const count = pageCountRef.current;
       if (!count) return;
 
-      const visible = new Set<number>();
-      if (orientationRef.current === "portrait") {
-        visible.add(center);
-      } else {
-        visible.add(center);
-        if (center + 1 < count) visible.add(center + 1);
-      }
+      const visible = new Set<number>(
+        getSpreadPages(center, count, getLayout())
+      );
+      if (!visible.size) visible.add(center);
 
       for (const index of visible) {
         void ensurePageRef.current(index);
@@ -451,7 +589,7 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
 
       pruneCache();
     },
-    [pruneCache]
+    [getLayout, pruneCache]
   );
 
   const getBookSize = useCallback(() => {
@@ -513,23 +651,22 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
 
       const target = Math.min(count, Math.max(1, Math.round(humanPage)));
       const targetIndex = target - 1;
-      const spreadStart =
-        orientationRef.current === "portrait"
-          ? targetIndex
-          : targetIndex - (targetIndex % 2);
-      const targets =
-        orientationRef.current === "portrait"
-          ? [spreadStart]
-          : [spreadStart, spreadStart + 1].filter((index) => index < count);
+      const layout = getLayout();
+      const spreadStart = getSpreadStart(targetIndex, layout);
+      const targets = getSpreadPages(spreadStart, count, layout);
 
-      await Promise.all(targets.map((index) => ensurePageRef.current(index)));
+      await Promise.all(
+        (targets.length ? targets : [targetIndex]).map((index) =>
+          ensurePageRef.current(index)
+        )
+      );
       if (!mountedRef.current || !flipRef.current) return;
 
-      flip.turnToPage(targetIndex);
+      flip.turnToPage(spreadStart);
       setPageInput(String(target));
       if (zoomRef.current > 1) requestAnimationFrame(centerScroll);
     },
-    [centerScroll]
+    [centerScroll, getLayout]
   );
 
   const goNext = useCallback(async () => {
@@ -538,48 +675,55 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
     const current = currentPageRef.current;
     if (!flip || !count || navigationRef.current) return;
 
-    const portrait = orientationRef.current === "portrait";
-    const nextIndex = portrait ? current + 1 : current + 2;
-
-    if (nextIndex >= count) return;
+    const layout = getLayout();
+    const nextStart = getNextSpreadStart(current, count, layout);
+    if (nextStart >= count) return;
 
     navigationRef.current = true;
     window.setTimeout(() => {
       navigationRef.current = false;
     }, 220);
 
-    const targets = portrait
-      ? [nextIndex]
-      : [nextIndex, nextIndex + 1].filter((index) => index < count);
+    const targets = getSpreadPages(nextStart, count, layout);
 
-    await Promise.all(targets.map((index) => ensurePageRef.current(index)));
+    await Promise.all(
+      (targets.length ? targets : [nextStart]).map((index) =>
+        ensurePageRef.current(index)
+      )
+    );
     if (!mountedRef.current || !flipRef.current) return;
 
     flip.flipNext();
     if (zoomRef.current > 1) requestAnimationFrame(centerScroll);
-  }, [centerScroll]);
+  }, [centerScroll, getLayout]);
 
   const goPrev = useCallback(async () => {
     const flip = flipRef.current;
+    const count = pageCountRef.current;
     const current = currentPageRef.current;
     if (!flip || current <= 0 || navigationRef.current) return;
 
-    const portrait = orientationRef.current === "portrait";
-    const targets = portrait
-      ? [current - 1]
-      : [current - 2, current - 1].filter((index) => index >= 0);
+    const layout = getLayout();
+    const prevStart = getPrevSpreadStart(current, layout);
+    if (prevStart < 0) return;
+
+    const targets = getSpreadPages(prevStart, count, layout);
 
     navigationRef.current = true;
     window.setTimeout(() => {
       navigationRef.current = false;
     }, 220);
 
-    await Promise.all(targets.map((index) => ensurePageRef.current(index)));
+    await Promise.all(
+      (targets.length ? targets : [prevStart]).map((index) =>
+        ensurePageRef.current(index)
+      )
+    );
     if (!mountedRef.current || !flipRef.current) return;
 
     flip.flipPrev();
     if (zoomRef.current > 1) requestAnimationFrame(centerScroll);
-  }, [centerScroll]);
+  }, [centerScroll, getLayout]);
 
   // Ölçüm: tek/çift sayfa modu sahne genişliğine göre belirlenir. Mod
   // değiştiğinde görüntüleyici mevcut sayfayı koruyarak yeniden kurulur.
@@ -646,11 +790,13 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
 
     const pages: HTMLDivElement[] = [];
     const images: HTMLImageElement[] = [];
+    const frames: HTMLDivElement[] = [];
 
     for (let index = 0; index < pageCount; index += 1) {
       const page = document.createElement("div");
       page.className = "magazine-page";
       page.dataset.density = "soft";
+      page.dataset.pageIndex = String(index);
       page.setAttribute("aria-label", `Dergi sayfası ${index + 1}`);
 
       const frame = document.createElement("div");
@@ -679,10 +825,12 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
       page.append(frame);
       pages.push(page);
       images.push(image);
+      frames.push(frame);
     }
 
     pageElsRef.current = pages;
     imgElsRef.current = images;
+    setPageFrames(frames);
 
     const size = getBookSize();
     if (size.hostWidth <= 0) {
@@ -723,7 +871,7 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
           startZIndex: 0,
           autoSize: true,
           maxShadowOpacity: 0.55,
-          showCover: layoutMode === "portrait",
+          showCover: true,
           mobileScrollSupport: true,
           clickEventForward: true,
           useMouseEvents: true,
@@ -793,12 +941,10 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
 
         if (destroyed) return;
 
-        const visible =
-          orientationRef.current === "portrait"
-            ? [resolvedPage]
-            : [resolvedPage, resolvedPage + 1].filter(
-                (index) => index < pageCount
-              );
+        const visible = getSpreadPages(resolvedPage, pageCount, {
+          portrait: orientationRef.current === "portrait",
+          showCover: SHOW_COVER,
+        });
 
         await Promise.all(visible.map((index) => ensurePageRef.current(index)));
         if (destroyed) return;
@@ -829,6 +975,7 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
       pageElsRef.current = [];
       imgElsRef.current = [];
       pendingRenders.clear();
+      setPageFrames([]);
     };
   }, [
     applySize,
@@ -854,6 +1001,22 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
 
     return () => window.clearTimeout(timeout);
   }, [applySize, centerScroll, syncWindow, viewerReady, zoom]);
+
+  // Kitap düzeninde kapak tek sayfa olarak sağ yuvaya düşer; görsel olarak
+  // ortalanması için kitabı yarım sayfa sola kaydırıyoruz.
+  const showingCover =
+    orientation !== "portrait" &&
+    currentPage === 0 &&
+    getSpreadPages(0, pageCount, {
+      portrait: false,
+      showCover: SHOW_COVER,
+    }).length === 1;
+
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    host.dataset.cover = showingCover ? "true" : "false";
+  }, [showingCover, viewerReady]);
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -925,20 +1088,25 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
   const resetZoom = useCallback(() => setZoom(1), []);
 
   const canGoPrev = currentPage > 0;
-  const nextPageIndex =
-    orientation === "portrait" ? currentPage + 1 : currentPage + 2;
-  const canGoNext = nextPageIndex < pageCount;
+  const spreadPages = useMemo(
+    () =>
+      getSpreadPages(currentPage, pageCount, {
+        portrait: orientation === "portrait",
+        showCover: SHOW_COVER,
+      }),
+    [currentPage, orientation, pageCount]
+  );
+  const canGoNext =
+    pageCount > 0 &&
+    getNextSpreadStart(currentPage, pageCount, {
+      portrait: orientation === "portrait",
+      showCover: SHOW_COVER,
+    }) < pageCount;
 
   const pageLabel = useMemo(() => {
     if (!pageCount) return "—";
-    if (orientation === "portrait") {
-      return String(currentPage + 1);
-    }
-    const end = Math.min(currentPage + 2, pageCount);
-    return end > currentPage + 1
-      ? `${currentPage + 1}–${end}`
-      : String(currentPage + 1);
-  }, [currentPage, orientation, pageCount]);
+    return formatSpreadLabel(spreadPages, currentPage);
+  }, [currentPage, pageCount, spreadPages]);
 
   const handlePageSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -970,6 +1138,115 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
     void goToPage(page);
   };
 
+  // İşaretleme yüzeyi kitabın tam üzerine oturur; tıklamayı yakalar.
+  useEffect(() => {
+    if (!marking) return;
+
+    const update = () => {
+      const host = hostRef.current;
+      const canvas = host?.parentElement;
+      if (!host || !canvas) return;
+      const hostRect = host.getBoundingClientRect();
+      const canvasRect = canvas.getBoundingClientRect();
+      if (hostRect.width <= 0 || hostRect.height <= 0) return;
+      setMarkSurface({
+        left: hostRect.left - canvasRect.left,
+        top: hostRect.top - canvasRect.top,
+        width: hostRect.width,
+        height: hostRect.height,
+      });
+    };
+
+    const frame = requestAnimationFrame(update);
+    const observer = new ResizeObserver(update);
+    if (hostRef.current) observer.observe(hostRef.current);
+    if (stageRef.current) observer.observe(stageRef.current);
+    window.addEventListener("resize", update);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [marking, viewerReady, zoom, layoutMode]);
+
+  const handleMarkPoint = (event: React.PointerEvent<HTMLDivElement>) => {
+    const { clientX, clientY } = event;
+
+    // Sayfayı konumundan buluyoruz: PageFlip kendi gölge/perspektif
+    // katmanları yüzünden `elementsFromPoint` sayfaları atlayabiliyor.
+    const isInside = (rect: DOMRect) =>
+      clientX >= rect.left &&
+      clientX <= rect.right &&
+      clientY >= rect.top &&
+      clientY <= rect.bottom;
+
+    let pageEl: HTMLElement | null = null;
+    for (const candidate of pageElsRef.current) {
+      if (candidate.offsetParent === null) continue;
+      const rect = candidate.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0 && isInside(rect)) {
+        pageEl = candidate;
+        break;
+      }
+    }
+
+    if (!pageEl) {
+      const target = document.elementsFromPoint(clientX, clientY)
+        .map((element) => element.closest<HTMLElement>(".magazine-page"))
+        .find((element): element is HTMLElement => Boolean(element));
+      pageEl = target ?? null;
+    }
+
+    if (!pageEl) return;
+
+    const index = Number(pageEl.dataset.pageIndex);
+    if (!Number.isInteger(index) || index < 0) return;
+
+    const frame =
+      pageEl.querySelector<HTMLElement>(".magazine-page__frame") ?? pageEl;
+    const rect = frame.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+
+    const anchor = {
+      x: Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)),
+      y: Math.min(1, Math.max(0, (clientY - rect.top) / rect.height)),
+    };
+
+    setMarking(false);
+    setActiveNoteId(null);
+    setComposer({ page: index + 1, anchor });
+    setNotesOpen(true);
+  };
+
+  const openNote = (note: PublicMagazineNote) => {
+    setComposer(null);
+    setActiveNoteId(note.id);
+    setNotesOpen(true);
+  };
+
+  const handleStartMarking = () => {
+    setNotesOpen(false);
+    setComposer(null);
+    setMarking(true);
+  };
+
+  const handleSubmitNote = async (input: {
+    body: string;
+    name: string;
+    email: string;
+    website: string;
+  }): Promise<MagazineNoteSubmitResult> => {
+    if (!composer) {
+      return { ok: false, message: "Not hedefi bulunamadı. Lütfen tekrar deneyin." };
+    }
+    return submitNote({
+      page: composer.page,
+      anchor: composer.anchor,
+      ...input,
+    });
+  };
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -983,7 +1260,14 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
         return;
       }
 
+      // Panel açıkken gezinme tuşları dergiyi çevirmesin.
+      if (notesOpen) return;
+
       if (event.key === "Escape") {
+        if (marking) {
+          setMarking(false);
+          return;
+        }
         if (thumbsOpen) {
           setThumbsOpen(false);
           return;
@@ -999,7 +1283,7 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
         return;
       }
 
-      if (thumbsOpen || !viewerReady) return;
+      if (thumbsOpen || marking || !viewerReady) return;
 
       switch (event.key) {
         case "ArrowRight":
@@ -1050,6 +1334,8 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
     goNext,
     goPrev,
     goToPage,
+    marking,
+    notesOpen,
     pageCount,
     resetZoom,
     thumbsOpen,
@@ -1079,6 +1365,25 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            className="magazine-text-button magazine-text-button--notes"
+            onClick={() => {
+              setComposer(null);
+              setNotesOpen(true);
+            }}
+            disabled={!viewerReady}
+            aria-haspopup="dialog"
+          >
+            <NoteIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">Notlar</span>
+            <span className="sr-only sm:hidden">Notlar</span>
+            {notes.length > 0 && (
+              <span className="magazine-note-count" aria-hidden="true">
+                {notes.length}
+              </span>
+            )}
+          </button>
           <button
             type="button"
             className="magazine-text-button"
@@ -1126,12 +1431,61 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
         )}
 
         {showBook && (
-          <div className="magazine-reader__canvas">
+          <div
+            className="magazine-reader__canvas"
+            data-marking={marking ? "true" : "false"}
+          >
             <div
               ref={hostRef}
               className="magazine-reader__book"
               style={{ touchAction: zoom > 1 ? "pan-x pan-y" : undefined }}
             />
+
+            {portalReady &&
+              pageFrames.map((frame, index) =>
+                createPortal(
+                  <PageNoteOverlay
+                    page={index + 1}
+                    notes={notes.filter((note) => note.page === index + 1)}
+                    activeNoteId={activeNoteId}
+                    hoveredNoteId={hoveredNoteId}
+                    onHover={setHoveredNoteId}
+                    onSelect={openNote}
+                  />,
+                  frame,
+                  `magazine-notes-page-${index}`
+                )
+              )}
+
+            {marking && markSurface && (
+              <div
+                className="magazine-marking-surface"
+                style={{
+                  left: markSurface.left,
+                  top: markSurface.top,
+                  width: markSurface.width,
+                  height: markSurface.height,
+                }}
+                onPointerDown={handleMarkPoint}
+                role="button"
+                tabIndex={-1}
+                aria-label="Not bırakmak için sayfada bir nokta seçin"
+              />
+            )}
+          </div>
+        )}
+
+        {marking && (
+          <div className="magazine-marking-hint" role="status">
+            <MarkerIcon className="h-4 w-4" />
+            <span>Not bırakmak istediğiniz noktaya dokunun.</span>
+            <button
+              type="button"
+              onClick={() => setMarking(false)}
+              className="magazine-marking-hint__cancel"
+            >
+              Vazgeç
+            </button>
           </div>
         )}
 
@@ -1146,8 +1500,7 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
           open={thumbsOpen}
           pageCount={pageCount}
           ratio={ratio}
-          currentPage={currentPage}
-          orientation={orientation}
+          activePages={spreadPages}
           onSelect={handleThumbnailSelect}
           onClose={() => setThumbsOpen(false)}
           renderThumbnail={renderThumbnail}
@@ -1237,10 +1590,67 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
       </div>
 
       <p className="magazine-reader__hint">
-        <BookIcon className="h-3.5 w-3.5" aria-hidden="true" />
-        Sayfaları çevirmek için kenarlara tıklayın, kaydırın veya ok tuşlarını
-        kullanın.
+        <span className="magazine-reader__hint-item">
+          <BookIcon className="h-3.5 w-3.5" aria-hidden="true" />
+          <span>
+            Sayfaları çevirmek için kenarlara tıklayın, kaydırın veya ok
+            tuşlarını kullanın.
+          </span>
+        </span>
+        <span className="magazine-reader__hint-sep" aria-hidden="true">
+          ·
+        </span>
+        <span className="magazine-reader__hint-item">
+          <NoteIcon className="h-3.5 w-3.5" aria-hidden="true" />
+          <button
+            type="button"
+            className="magazine-reader__hint-button"
+            onClick={handleStartMarking}
+            disabled={!viewerReady}
+          >
+            Sayfada bir noktayı işaretleyip not bırakın
+          </button>
+        </span>
       </p>
+
+      {portalReady &&
+        createPortal(
+          <MagazineNotesPanel
+            key={
+              composer
+                ? `${composer.page}:${
+                    composer.anchor
+                      ? `${composer.anchor.x.toFixed(3)},${composer.anchor.y.toFixed(3)}`
+                      : "page"
+                  }`
+                : "list"
+            }
+            open={notesOpen}
+            notes={notes}
+            composer={composer}
+            activeNoteId={activeNoteId}
+            currentPage={currentPage + 1}
+            onClose={() => {
+              setNotesOpen(false);
+              setActiveNoteId(null);
+            }}
+            onJumpToPage={(page) => {
+              setNotesOpen(false);
+              void goToPage(page);
+            }}
+            onStartCompose={(target) => {
+              setActiveNoteId(null);
+              setComposer(target);
+            }}
+            onCancelCompose={() => {
+              setComposer(null);
+              setNotesOpen(false);
+            }}
+            onStartMarking={handleStartMarking}
+            onSubmit={handleSubmitNote}
+          />,
+          document.body
+        )}
 
       {immersive && (
         <button

@@ -4,3 +4,4 @@ export * as commentRepository from "./comment.repository";
 export * as supportMessageRepository from "./support-message.repository";
 export * as backupRepository from "./backup.repository";
 export * as tarihteBugunRepository from "./tarihte-bugun.repository";
+export * as magazineNoteRepository from "./magazine-note.repository";

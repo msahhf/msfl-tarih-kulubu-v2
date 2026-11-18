@@ -5,3 +5,4 @@ export * from "./comment";
 export * from "./support-message";
 export * from "./backup";
 export * from "./tarihte-bugun";
+export * from "./magazine-note";
