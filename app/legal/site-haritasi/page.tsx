@@ -16,6 +16,7 @@ const SECTIONS: {
       { href: "/", label: "Ana Sayfa" },
       { href: "/hakkinda", label: "Hakkında (Vizyon & Misyon, Yönetim)" },
       { href: "/etkinlikler", label: "Etkinlikler (Yıllık Plan)" },
+      { href: "/dergi", label: "Dergi (Dijital Yayın)" },
       { href: "/tarihte-bugun", label: "Tarihte Bugün" },
       { href: "/yardim-destek", label: "İletişim & Destek" },
     ],

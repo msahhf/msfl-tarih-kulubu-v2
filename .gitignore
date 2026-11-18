@@ -8,3 +8,5 @@ logs/
 dump
 .next
 tsconfig.tsbuildinfo
+# Generated PDF.js runtime assets
+public/pdf/

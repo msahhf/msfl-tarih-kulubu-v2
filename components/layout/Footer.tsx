@@ -11,11 +11,11 @@ export function Footer() {
           <div className="space-y-4 md:col-span-5">
             <div className="flex items-center gap-3">
               <Image
-                src="/img/logo-kulup.webp"
+                src="/img/logo-tarih-kulubu.webp"
                 alt="MSFL Tarih Kulübü logosu"
-                width={48}
-                height={48}
-                className="h-12 w-12 rounded-full object-contain"
+                width={1800}
+                height={1078}
+                className="h-14 w-auto rounded-sm border border-border-strong/60 object-contain"
               />
               <div>
                 <h2 className="font-display font-bold text-xl text-foreground">
@@ -42,6 +42,11 @@ export function Footer() {
               <li>
                 <Link href="/blog" className="hover:text-accent transition-colors">
                   Blog
+                </Link>
+              </li>
+              <li>
+                <Link href="/dergi" className="hover:text-accent transition-colors">
+                  Dergi
                 </Link>
               </li>
               <li>

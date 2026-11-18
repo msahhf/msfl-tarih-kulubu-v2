@@ -20,9 +20,28 @@ const arimo = Arimo({
 });
 
 export const metadata: Metadata = {
-  title: "MSFL Tarih Kulübü",
-  description: "Mustafa Saffet Fen Lisesi Tarih Kulübü — dijital arşiv ve araştırma platformu",
   metadataBase: new URL("https://msfl-tarih-kulubu.vercel.app"),
+  title: {
+    default: "MSFL Tarih Kulübü",
+    template: "%s | MSFL Tarih Kulübü",
+  },
+  description: "Mustafa Saffet Fen Lisesi Tarih Kulübü — dijital arşiv ve araştırma platformu",
+  applicationName: "MSFL Tarih Kulübü",
+  openGraph: {
+    type: "website",
+    locale: "tr_TR",
+    url: "/",
+    siteName: "MSFL Tarih Kulübü",
+    title: "MSFL Tarih Kulübü",
+    description:
+      "Mustafa Saffet Fen Lisesi Tarih Kulübü — dijital arşiv, araştırma ve dergi platformu.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MSFL Tarih Kulübü",
+    description:
+      "Mustafa Saffet Fen Lisesi Tarih Kulübü — dijital arşiv, araştırma ve dergi platformu.",
+  },
 };
 
 export const viewport: Viewport = {

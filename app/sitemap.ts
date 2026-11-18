@@ -8,6 +8,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "",
     "/hakkinda",
     "/etkinlikler",
+    "/dergi",
     "/tarihte-bugun",
     "/blog",
     "/giris",

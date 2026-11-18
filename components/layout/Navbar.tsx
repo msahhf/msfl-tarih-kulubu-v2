@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { href: "/", label: "Anasayfa" },
   { href: "/hakkinda", label: "Hakkında" },
   { href: "/blog", label: "Blog" },
+  { href: "/dergi", label: "Dergi" },
   { href: "/etkinlikler", label: "Etkinlikler" },
   { href: "/tarihte-bugun", label: "Tarihte Bugün" },
   { href: "/yardim-destek", label: "Yardım & Destek" },
@@ -26,19 +27,11 @@ export async function Navbar() {
             aria-label="MSFL Tarih Kulübü ana sayfa"
           >
             <Image
-              src="/img/logo-kulup.webp"
+              src="/img/logo-tarih-kulubu-transparent.webp"
               alt="MSFL Tarih Kulübü logosu"
-              width={48}
-              height={48}
-              className="h-11 w-11 shrink-0 rounded-full object-contain"
-              priority
-            />
-            <Image
-              src="/img/logo-msfl.webp"
-              alt="Mustafa Saffet Fen Lisesi logosu"
-              width={44}
-              height={44}
-              className="hidden h-10 w-10 shrink-0 rounded-full object-contain sm:block"
+              width={1800}
+              height={1078}
+              className="h-10 w-auto shrink-0 object-contain sm:h-12"
               priority
             />
             <span className="min-w-0 leading-tight">
