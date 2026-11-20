@@ -30,7 +30,7 @@ export const magazineIssues: MagazineIssue[] = [
     issueNumber: "5",
     period: "Kasım 2026",
     description:
-      "MSFL Tarih Kulübü dergisinin 5. sayısı. 68 sayfa; kapak dosyası: Dijital Sömürgecilik.",
+      "Geçmişi bugünden kopuk bir hikâye olarak değil, günümüzü anlamlandıran canlı bir pusula olarak ele alıyoruz: Malazgirt’ten Bosna’ya, kapitülasyonlardan 2026’nın “dijital sömürgecilik” tartışmalarına. 24 Kasım Öğretmenler Günü’ne ithaf edildi.",
     pdfUrl: "/dergi/tarih-i-kadim-5-sayi.pdf",
     publishedAt: "2026-11-01",
   },
