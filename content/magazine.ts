@@ -23,7 +23,18 @@ export type MagazineIssue = {
  * Yayımdaki sayılar. İlk sayı yayımlanana kadar liste bilinçli olarak boş:
  * örnek/deneme PDF'leri gerçek kulüp yayını gibi gösterilmez.
  */
-export const magazineIssues: MagazineIssue[] = [];
+export const magazineIssues: MagazineIssue[] = [
+  {
+    slug: "tarih-i-kadim-5-sayi",
+    title: "Tarih-i Kadim",
+    issueNumber: "5",
+    period: "Kasım 2026",
+    description:
+      "MSFL Tarih Kulübü dergisinin 5. sayısı. 68 sayfa; kapak dosyası: Dijital Sömürgecilik.",
+    pdfUrl: "/dergi/tarih-i-kadim-5-sayi.pdf",
+    publishedAt: "2026-11-01",
+  },
+];
 
 export function getCurrentMagazineIssue(): MagazineIssue | null {
   return magazineIssues[0] ?? null;
