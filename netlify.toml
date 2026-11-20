@@ -1,0 +1,17 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--no-audit --no-fund"
+
+# Next.js, Netlify tarafında OpenNext adaptörüyle otomatik yapılandırılır.
+# Adaptör sürümü bilinçli olarak sabitlenmez; Netlify her derlemede güncel
+# sürümü kendisi kurar.
+
+[[headers]]
+  for = "/dergi/*.pdf"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Accept-Ranges = "bytes"

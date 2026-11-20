@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { SocialBar } from "@/components/layout/SocialBar";
 import { Footer } from "@/components/layout/Footer";
+import { SITE_URL } from "@/lib/site-url";
 
 const cardo = Cardo({
   subsets: ["latin", "latin-ext"],
@@ -20,7 +21,7 @@ const arimo = Arimo({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://msfl-tarih-kulubu.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "MSFL Tarih Kulübü",
     template: "%s | MSFL Tarih Kulübü",

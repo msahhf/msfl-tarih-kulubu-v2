@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 import { postRepository } from "@/lib/db/repositories";
+import { SITE_URL } from "@/lib/site-url";
 
-const BASE_URL = "https://msfl-tarih-kulubu.vercel.app";
+const BASE_URL = SITE_URL;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = [
