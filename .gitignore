@@ -10,3 +10,6 @@ dump
 tsconfig.tsbuildinfo
 # Generated PDF.js runtime assets
 public/pdf/
+
+# Local Netlify folder
+.netlify

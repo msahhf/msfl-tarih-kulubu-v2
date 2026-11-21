@@ -6,9 +6,11 @@
   NODE_VERSION = "22"
   NPM_FLAGS = "--no-audit --no-fund"
 
-# Next.js, Netlify tarafında OpenNext adaptörüyle otomatik yapılandırılır.
-# Adaptör sürümü bilinçli olarak sabitlenmez; Netlify her derlemede güncel
-# sürümü kendisi kurar.
+# Next.js, Netlify tarafında OpenNext adaptörüyle çalışır. Adaptör
+# `package.json` içinde tanımlı olduğu için CLI ile yapılan yerel
+# derlemelerde de (GitHub Actions / manuel yayın) aynı sürüm kullanılır.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 [[headers]]
   for = "/dergi/*.pdf"
