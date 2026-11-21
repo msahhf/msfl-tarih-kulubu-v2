@@ -13,8 +13,29 @@ function getEncodedKey(): Uint8Array {
 const protectedRoutes = ["/hesap", "/blog/olustur"];
 const adminRoutes = ["/admin"];
 
+/**
+ * Bağımsız dergi yayınında (NEXT_PUBLIC_MAGAZINE_SITE=1) yalnızca dergi
+ * yolları açıktır; kulüp sitesine ait diğer sayfalar dergi ana sayfasına
+ * yönlendirilir.
+ */
+const MAGAZINE_SITE = process.env.NEXT_PUBLIC_MAGAZINE_SITE === "1";
+const MAGAZINE_ALLOWED = ["/dergi", "/api/dergi", "/giris", "/kayit"];
+
+function isMagazinePath(path: string): boolean {
+  return (
+    path === "/" ||
+    MAGAZINE_ALLOWED.some(
+      (allowed) => path === allowed || path.startsWith(`${allowed}/`)
+    )
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
+
+  if (MAGAZINE_SITE && !isMagazinePath(path)) {
+    return NextResponse.redirect(new URL("/dergi", request.url));
+  }
 
   // Admin login page must stay reachable for anonymous users (otherwise
   // the /admin/* matcher redirects it to itself in an infinite loop).
@@ -55,5 +76,9 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/hesap/:path*", "/admin/:path*", "/blog/olustur", "/blog/:path*/duzenle"],
+  // Tüm sayfa istekleri (statik dosyalar ve API yolları hariç), böylece
+  // dergi yayınındaki yol koruması da her sayfada çalışır.
+  matcher: [
+    "/((?!_next/|_vercel/|img/|pdf/|api/|favicon|robots\\.txt|sitemap\\.xml|.*\\.[a-zA-Z0-9]+$).*)",
+  ],
 };

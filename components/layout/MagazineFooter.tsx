@@ -27,9 +27,9 @@ export function MagazineFooter({ mainSiteUrl }: { mainSiteUrl: string }) {
           <a href={mainSiteUrl} className="transition-colors hover:text-gold">
             Kulüp Sitesi
           </a>
-          <Link href="/yardim-destek" className="transition-colors hover:text-gold">
+          <a href={`${mainSiteUrl}/yardim-destek`} className="transition-colors hover:text-gold">
             İletişim
-          </Link>
+          </a>
         </nav>
       </div>
 
