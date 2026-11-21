@@ -584,6 +584,32 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
     }
   }, []);
 
+  // Yakınlaştırılmış görünümde sayfa çevirme jestleri kapanır; parmakla
+  // sürükleme doğrudan sahneyi kaydırır. StPageFlip dokunma olaylarını kendi
+  // kök öğesinde dinlediği için olayları yakalama (capture) aşamasında
+  // durduruyoruz: sahne kaydırması tarayıcının kendi davranışı olarak kalır.
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    const blockFlipGestures = (event: TouchEvent) => {
+      if (zoomRef.current <= 1) return;
+      event.stopPropagation();
+    };
+
+    stage.addEventListener("touchstart", blockFlipGestures, true);
+    stage.addEventListener("touchmove", blockFlipGestures, true);
+    stage.addEventListener("touchend", blockFlipGestures, true);
+    stage.addEventListener("touchcancel", blockFlipGestures, true);
+
+    return () => {
+      stage.removeEventListener("touchstart", blockFlipGestures, true);
+      stage.removeEventListener("touchmove", blockFlipGestures, true);
+      stage.removeEventListener("touchend", blockFlipGestures, true);
+      stage.removeEventListener("touchcancel", blockFlipGestures, true);
+    };
+  }, []);
+
   const goToPage = useCallback(
     async (humanPage: number) => {
       const flip = flipRef.current;
@@ -1287,7 +1313,7 @@ export function MagazineReader({ issue }: { issue: MagazineIssue }) {
             <div
               ref={hostRef}
               className="magazine-reader__book"
-              style={{ touchAction: zoom > 1 ? "pan-x pan-y" : undefined }}
+              data-zoomed={zoom > 1 ? "true" : "false"}
             />
 
             {portalReady &&

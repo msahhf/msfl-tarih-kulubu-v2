@@ -1233,3 +1233,27 @@
     }
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Dergi okuyucusu: yakınlaştırılmış görünümde kaydırma
+ *
+ * StPageFlip kendi kök öğesine `touch-action: pan-y` veriyor; bu yüzden
+ * yakınlaştırılmış sayfada yatay sürükleme tarayıcı tarafından engelleniyor
+ * ve dokunma jesti sayfa çevirmeye gidiyordu. Bu blok bilinçli olarak
+ * `@layer` dışında: kütüphanenin çalışma anında eklediği stil katmansız
+ * olduğu için katman içindeki kurallar onu ezemiyor.
+ * ------------------------------------------------------------------------- */
+.magazine-reader__book[data-zoomed="true"],
+.magazine-reader__book[data-zoomed="true"] .stf__parent,
+.magazine-reader__book[data-zoomed="true"] .stf__block {
+  -ms-touch-action: pan-x pan-y;
+  touch-action: pan-x pan-y;
+}
+
+.magazine-reader__book[data-zoomed="true"] {
+  cursor: grab;
+}
+
+.magazine-reader__book[data-zoomed="true"]:active {
+  cursor: grabbing;
+}
