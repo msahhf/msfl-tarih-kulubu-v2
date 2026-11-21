@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import { postRepository, tarihteBugunRepository } from "@/lib/db/repositories";
 import { getSession } from "@/lib/auth/session";
 import { Container } from "@/components/ui/Container";
@@ -7,6 +8,9 @@ import { PostCard } from "@/components/blog/PostCard";
 import type { Post } from "@/types";
 
 export const dynamic = "force-dynamic";
+
+/** Bağımsız dergi yayınında kök adres doğrudan dergiye gider. */
+const isMagazineSite = process.env.NEXT_PUBLIC_MAGAZINE_SITE === "1";
 
 /** Eski sitedeki tam ekran arka plan bölümlerinin modern karşılığı:
  *  gerçek bölüm görselleri + okunabilirlik için perde, responsive yükseklik. */
@@ -41,6 +45,8 @@ function Band({
 }
 
 export default async function HomePage() {
+  if (isMagazineSite) redirect("/dergi");
+
   let featuredPosts: Post[] = [];
   try {
     featuredPosts = await postRepository.findRecent(3);
