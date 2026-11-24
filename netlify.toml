@@ -17,3 +17,8 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
     Accept-Ranges = "bytes"
+    # Netlify `application/pdf` yanıtlarını brotli ile sıkıştırıyor; sıkıştırılmış
+    # yanıtta Content-Length olmadığı için PDF.js aralık (Range) desteğini
+    # algılayamıyor ve 88 MB'lik dosyanın TAMAMINI indiriyordu. Bu içerik türü
+    # sıkıştırma listesinde olmadığından kısmi indirme yeniden çalışır.
+    Content-Type = "application/octet-stream"
