@@ -133,7 +133,8 @@ export function usePdfDocument(pdfUrl: string) {
           wasmUrl: "/pdf/wasm/",
           iccUrl: "/pdf/iccs/",
           disableAutoFetch: true,
-          disableStream: false,
+          disableStream: true,
+          rangeChunkSize: 262144,
         });
 
         loadingTaskRef.current = loadingTask;
