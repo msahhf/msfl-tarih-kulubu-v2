@@ -31,8 +31,8 @@ export const magazineIssues: MagazineIssue[] = [
     period: "Kasım 2026",
     description:
       "Geçmişi bugünden kopuk bir hikâye değil, günümüzü anlamlandıran canlı bir pusula olarak ele aldık: Malazgirt’ten Bosna’ya, kapitülasyonlardan dijital sömürgeciliğe. 24 Kasım Öğretmenler Günü’ne ithaf edildi.",
-    pdfUrl: "/dergi/tarih-i-kadim-5-sayi.pdf",
-    publishedAt: "2026-11-01",
+    pdfUrl: "/dergi/tarih-i-kadim-5-sayi-v2.pdf",
+    publishedAt: "2026-11-24",
   },
 ];
 
